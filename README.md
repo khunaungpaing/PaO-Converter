@@ -5,9 +5,11 @@
 [![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](#run-from-source)
 [![GitHub Release](https://img.shields.io/github/v/release/khunaungpaing/PaO-Converter)](https://github.com/khunaungpaing/PaO-Converter/releases/latest)
 
-A **free, open-source** desktop application that converts Pa-O legacy Win/ASCII encoded text to standard Pa-O Unicode — including Pa-O Ext-C characters. It supports live text conversion, drag-and-drop file conversion (`.txt`, `.docx`, `.pdf`), and selective font handling. Built for the Pa-O language community as a preservation and accessibility tool.
+A **free, open-source** desktop application that converts Pa-O legacy Win/ASCII encoded text to standard Pa-O Unicode — including characters in the **Pa-O Extended-C range (U+116D0–116D9)** added in Unicode 16 (2024). It supports live text conversion, drag-and-drop file conversion (`.txt`, `.docx`, `.pdf`), and selective font handling.
 
-> **ပအိုဝ်ဘာသာ:** ဤ application သည် ပအိုဝ်စာဝေါဟာရများကို Win/ASCII encoding မှ Unicode သို့ ပြောင်းလဲပေးသော အခမဲ့ open-source ဆော့ဖ်ဝဲလ်ဖြစ်သည်။
+The Pa'O people (ပအိုဝ်းလူမျိုး) are an ethnic minority in Myanmar numbering approximately **750,000–875,000**, using Myanmar script with special extensions not present in standard Burmese. This tool helps the community transition from legacy Win/ASCII encoding to the modern Unicode standard, enabling document preservation and digital accessibility.
+
+> **ပအိုဝ်ဘာသာ:** ဤ application သည် ပအိုဝ်းစာဝေါဟာရများကို Win/ASCII encoding မှ Unicode သို့ ပြောင်းလဲပေးသော အခမဲ့ open-source ဆော့ဖ်ဝဲလ်ဖြစ်သည်။
 
 ---
 
