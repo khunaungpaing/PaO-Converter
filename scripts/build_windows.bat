@@ -24,28 +24,28 @@ if errorlevel 1 (
 echo ==> Checking for Inno Setup Compiler (ISCC)...
 set "ISCC_PATH="
 
-if exist "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" (
-    set "ISCC_PATH=C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-) else if exist "C:\Program Files\Inno Setup 6\ISCC.exe" (
-    set "ISCC_PATH=C:\Program Files\Inno Setup 6\ISCC.exe"
-) else if exist "%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe" (
-    set "ISCC_PATH=%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe"
-) else if exist "%ProgramFiles%\Inno Setup 6\ISCC.exe" (
-    set "ISCC_PATH=%ProgramFiles%\Inno Setup 6\ISCC.exe"
-) else (
-    where ISCC.exe >nul 2>nul
-    if !errorlevel! equ 0 (
-        set "ISCC_PATH=ISCC.exe"
-    ) else (
-        where iscc.exe >nul 2>nul
-        if !errorlevel! equ 0 (
-            set "ISCC_PATH=iscc.exe"
-        )
+where iscc.exe >nul 2>nul
+if %errorlevel% equ 0 set "ISCC_PATH=iscc.exe"
+
+if not defined ISCC_PATH (
+    where iscc >nul 2>nul
+    if %errorlevel% equ 0 set "ISCC_PATH=iscc"
+)
+
+if not defined ISCC_PATH (
+    if exist "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" (
+        set "ISCC_PATH=C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+    )
+)
+
+if not defined ISCC_PATH (
+    if exist "C:\Program Files\Inno Setup 6\ISCC.exe" (
+        set "ISCC_PATH=C:\Program Files\Inno Setup 6\ISCC.exe"
     )
 )
 
 if defined ISCC_PATH (
-    echo ==> Compiling Windows Installer with Inno Setup using: "!ISCC_PATH!"
+    echo ==> Compiling Windows Installer with: "!ISCC_PATH!"
     "!ISCC_PATH!" installer.iss
     if errorlevel 1 (
         echo [ERROR] Inno Setup compilation failed!
