@@ -69,9 +69,38 @@ jobs:
         run: |
           choco install innosetup -y
 
-      - name: Build Windows Installer
-        shell: cmd
-        run: scripts\build_windows.bat
+      - name: Build Windows App with PyInstaller
+        run: |
+          pyinstaller --clean pao_converter.spec
+
+      - name: Compile Windows Installer with Inno Setup
+        run: |
+          $isccPaths = @(
+              "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+              "C:\Program Files\Inno Setup 6\ISCC.exe",
+              "C:\ProgramData\chocolatey\bin\iscc.exe"
+          )
+          $iscc = $null
+          foreach ($p in $isccPaths) {
+              if (Test-Path $p) {
+                  $iscc = $p
+                  break
+              }
+          }
+          if (-not $iscc) {
+              $cmd = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+              if ($cmd) { $iscc = $cmd.Source }
+          }
+          if (-not $iscc) {
+              Write-Error "ISCC.exe (Inno Setup Compiler) not found!"
+              exit 1
+          }
+          Write-Host "Using Inno Setup Compiler at: $iscc"
+          & "$iscc" installer.iss
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "Inno Setup compilation failed with exit code $LASTEXITCODE"
+              exit $LASTEXITCODE
+          }
 
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
