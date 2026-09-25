@@ -1,0 +1,31 @@
+# Python bytecode and test/tool caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local environments and configuration
+.venv/
+venv/
+.env
+.env.*
+
+# PyInstaller build output (keep .spec files under version control)
+build/
+dist/
+
+# Operating-system and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+
+# Runtime logs
+*.log
+INSTALLER_NOTES.md
