@@ -68,6 +68,7 @@ jobs:
       - name: Install Inno Setup
         run: |
           choco install innosetup
+          echo "C:\Program Files (x86)\Inno Setup 6" >> $env:GITHUB_PATH
 
       - name: Build Windows Installer
         run: |

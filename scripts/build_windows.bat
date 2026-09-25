@@ -43,7 +43,7 @@ if defined ISCC_PATH (
     echo ==================================================
 ) else (
     echo.
-    echo [INFO] Inno Setup compiler (ISCC.exe) not found.
-    echo You can open 'installer.iss' manually in Inno Setup to compile the installer,
-    echo or distribute the standalone folder: dist\PaOConverter\
+    echo [ERROR] Inno Setup compiler (ISCC.exe) not found!
+    echo Please install Inno Setup 6 to compile the Windows installer.
+    exit /b 1
 )
