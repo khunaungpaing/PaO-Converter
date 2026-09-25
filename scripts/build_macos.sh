@@ -20,6 +20,14 @@ pyinstaller --clean pao_converter.spec
 VERSION=$(python3 -c "import sys; sys.path.insert(0, '.'); from core.version import __version__; print(__version__)")
 DMG_NAME="PaOConverter_v${VERSION}_macOS.dmg"
 
+echo "==> Removing quarantine attributes from .app..."
+xattr -cr "dist/PaOConverter.app"
+
+echo "==> Ad-hoc signing .app to satisfy Gatekeeper..."
+codesign --deep --force --sign - "dist/PaOConverter.app" || {
+  echo "  [warn] codesign not available — skipping ad-hoc signing"
+}
+
 echo "==> Packaging into ${DMG_NAME}..."
 STAGING_DIR="dist/dmg_staging"
 rm -rf "${STAGING_DIR}"

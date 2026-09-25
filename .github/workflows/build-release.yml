@@ -132,3 +132,24 @@ jobs:
           generate_release_notes: true
           draft: false
           prerelease: false
+          body: |
+            ## Installation
+
+            | Platform | File |
+            |---|---|
+            | macOS | `PaOConverter_vX.X.X_macOS.dmg` — drag app to Applications |
+            | Windows | `PaOConverter_vX.X.X_Windows_Setup.exe` — run the installer |
+
+            ### ⚠️ First-launch security warnings (expected for unsigned open-source apps)
+
+            **macOS — Gatekeeper:** Run this once in Terminal after downloading:
+            ```bash
+            xattr -cr ~/Downloads/PaOConverter_*_macOS.dmg
+            ```
+            Or go to **System Settings → Privacy & Security → "Open Anyway"**
+
+            **Windows — SmartScreen:** Click **More info → Run anyway**.
+            Or right-click the `.exe` → **Properties → check Unblock → OK** before running.
+
+            ---
+            *Pa-O Converter is free and open-source (MIT License). No data is collected.*

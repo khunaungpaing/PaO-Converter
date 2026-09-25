@@ -1,10 +1,13 @@
-# Pa-O ASCII → Unicode Converter (Experimental Version)
+# Pa-O ASCII → Unicode Converter
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows-lightgrey.svg)](#requirements)
-[![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](#requirements)
+[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows-lightgrey.svg)](#download--install)
+[![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](#run-from-source)
+[![GitHub Release](https://img.shields.io/github/v/release/khunaungpaing/PaO-Converter)](https://github.com/khunaungpaing/PaO-Converter/releases/latest)
 
-A free and open-source PyQt6 desktop app that converts Pa-O legacy Win/ASCII text to Pa-O Unicode (Experimental Version), including Pa-O Ext-C characters.
+A **free, open-source** desktop application that converts Pa-O legacy Win/ASCII encoded text to standard Pa-O Unicode — including Pa-O Ext-C characters. It supports live text conversion, drag-and-drop file conversion (`.txt`, `.docx`, `.pdf`), and selective font handling. Built for the Pa-O language community as a preservation and accessibility tool.
+
+> **ပအိုဝ်ဘာသာ:** ဤ application သည် ပအိုဝ်စာဝေါဟာရများကို Win/ASCII encoding မှ Unicode သို့ ပြောင်းလဲပေးသော အခမဲ့ open-source ဆော့ဖ်ဝဲလ်ဖြစ်သည်။
 
 ---
 
@@ -21,6 +24,35 @@ A free and open-source PyQt6 desktop app that converts Pa-O legacy Win/ASCII tex
 
 ---
 
+## Download & Install
+
+Download the latest pre-built installer from the [**Releases page**](https://github.com/khunaungpaing/PaO-Converter/releases/latest):
+
+| Platform | File | Notes |
+|---|---|---|
+| macOS | `PaOConverter_vX.X.X_macOS.dmg` | Drag to Applications |
+| Windows | `PaOConverter_vX.X.X_Windows_Setup.exe` | Run the Setup installer |
+
+### ⚠️ First-Launch Security Warnings
+
+These are expected on both platforms for unsigned open-source apps. No changes to your system are required.
+
+**macOS — Gatekeeper:**
+> "Pa-O Converter cannot be opened because it is from an unidentified developer."
+
+Run this once in Terminal after downloading the DMG:
+```bash
+xattr -cr ~/Downloads/PaOConverter_vX.X.X_macOS.dmg
+```
+Or: **System Settings → Privacy & Security → scroll down → "Open Anyway"**
+
+**Windows — SmartScreen:**
+> "Windows protected your PC"
+
+Click **More info → Run anyway**. Or right-click the `.exe` → **Properties → Unblock → OK** before running.
+
+---
+
 ## Requirements
 
 - Python 3.9 or newer
@@ -30,7 +62,7 @@ Dependencies are listed in [`requirements.txt`](requirements.txt).
 
 ---
 
-## Run locally
+## Run from source
 
 ```bash
 cd pao_converter
@@ -122,8 +154,23 @@ git push origin v1.0.0
 
 ---
 
+## Contributing
+
+Contributions are welcome! This project exists for the Pa-O language community.
+
+- **Bug reports & feature requests:** [Open an issue](https://github.com/khunaungpaing/PaO-Converter/issues)
+- **Pull requests:** Fork the repository, make your changes, and submit a PR
+- **Mapping corrections:** Pa-O character mapping improvements are especially valuable — see [`core/mapping.py`](core/mapping.py)
+
+Please do not modify `core/engine.py` or `core/mapping.py` without thorough testing across all character combinations.
+
+---
+
 ## License
 
 This project is open-source software licensed under the **[MIT License](LICENSE)** — see the [LICENSE](LICENSE) file for details.
 
 Free for personal, educational, community, and commercial use.
+
+**Author:** Khun Aung Paing & Pa-O Language Community  
+**Project:** [github.com/khunaungpaing/PaO-Converter](https://github.com/khunaungpaing/PaO-Converter)
