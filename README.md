@@ -9,7 +9,7 @@ A **free, open-source** desktop application that converts Pa-O legacy Win/ASCII 
 
 The Pa'O people (ပအိုဝ်းလူမျိုး) are an ethnic minority in Myanmar numbering approximately **750,000–875,000**, using Myanmar script with special extensions not present in standard Burmese. This tool helps the community transition from legacy Win/ASCII encoding to the modern Unicode standard, enabling document preservation and digital accessibility.
 
-> **ပအိုဝ်ဘာသာ:** ဤ application သည် ပအိုဝ်းစာဝေါဟာရများကို Win/ASCII encoding မှ Unicode သို့ ပြောင်းလဲပေးသော အခမဲ့ open-source ဆော့ဖ်ဝဲလ်ဖြစ်သည်။
+> ဤ application သည် ပအိုဝ်းစာဝေါဟာရများကို Win/ASCII encoding မှ Unicode သို့ ပြောင်းလဲပေးသော အခမဲ့ open-source ဆော့ဖ်ဝဲလ်ဖြစ်သည်။
 
 ---
 
