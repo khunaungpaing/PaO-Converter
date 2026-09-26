@@ -32,7 +32,7 @@ SRC  = ROOT / "assets" / "img" / "app.png"
 ICNS = ROOT / "assets" / "img" / "app.icns"
 ICO  = ROOT / "assets" / "img" / "app.ico"
 
-ICO_SIZES  = [16, 32, 48, 64, 128, 256]
+ICO_SIZES  = [16, 24, 32, 48, 64, 128, 256]
 ICNS_SIZES = [16, 32, 64, 128, 256, 512, 1024]
 
 # Maps pixel size → ICNS OSType tag
@@ -52,14 +52,55 @@ _ICNS_TAG = {
 # ---------------------------------------------------------------------------
 
 def make_ico(src: Path, dst: Path) -> None:
+    """Write a proper multi-resolution ICO file manually.
+
+    Pillow's ICO encoder has a long-standing bug where append_images is
+    silently ignored in many versions, producing a 1-frame file.
+    We write the ICO binary format directly instead.
+
+    ICO format:
+      ICONDIR  (6 bytes): reserved(2) + type(2)=1 + count(2)
+      ICONDIRENTRY × N (16 bytes each): w, h, colorCount, reserved,
+                                         planes, bitCount, bytesInRes, imageOffset
+      PNG data for each size (concatenated)
+    """
+    import io
+    import struct
+
     img = Image.open(src).convert("RGBA")
-    resized = [img.resize((s, s), Image.LANCZOS) for s in ICO_SIZES]
-    resized[0].save(
-        dst, format="ICO",
-        sizes=[(s, s) for s in ICO_SIZES],
-        append_images=resized[1:],
-    )
-    print(f"  created  {dst.relative_to(ROOT)}")
+
+    png_blobs: list[bytes] = []
+    for s in ICO_SIZES:
+        buf = io.BytesIO()
+        frame = img.resize((s, s), Image.LANCZOS)
+        frame.save(buf, format="PNG", optimize=False)
+        png_blobs.append(buf.getvalue())
+
+    count = len(ICO_SIZES)
+    header_size = 6 + count * 16          # ICONDIR + all ICONDIRENTRYs
+    data_offset = header_size
+
+    # ICONDIR
+    ico_bytes = struct.pack("<HHH", 0, 1, count)
+
+    # ICONDIRENTRY for each size
+    offsets: list[int] = []
+    offset = data_offset
+    for i, (s, blob) in enumerate(zip(ICO_SIZES, png_blobs)):
+        w = s if s < 256 else 0   # 0 means 256 in ICO spec
+        h = w
+        ico_bytes += struct.pack("<BBBBHHII", w, h, 0, 0, 1, 32,
+                                 len(blob), offset)
+        offsets.append(offset)
+        offset += len(blob)
+
+    # Raw PNG data
+    for blob in png_blobs:
+        ico_bytes += blob
+
+    dst.write_bytes(ico_bytes)
+    size_kb = len(ico_bytes) // 1024
+    print(f"  created  {dst.relative_to(ROOT)}  ({size_kb} KB, {count} sizes: {ICO_SIZES})")
 
 
 # ---------------------------------------------------------------------------
