@@ -40,6 +40,8 @@ a = Analysis(
         'PyQt6.QtCore',
         'PyQt6.QtGui',
         'PyQt6.QtWidgets',
+        'urllib.request',
+        'urllib.error',
     ],
     hookspath=[],
     hooksconfig={},

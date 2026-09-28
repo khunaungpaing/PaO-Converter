@@ -11,7 +11,7 @@ import sys
 # Allow sibling-package imports when run directly
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import (
     QApplication,
@@ -26,6 +26,7 @@ from core.version import APP_NAME, __version__
 from ui.about_dialog import AboutDialog
 from ui.file_tab import FileConvertTab
 from ui.text_tab import TextConvertTab
+from ui.update_dialog import UpdateDialog
 from utils.fonts import load_application_fonts
 
 
@@ -104,14 +105,32 @@ class MainWindow(QMainWindow):
 
         layout.addWidget(tabs)
 
+        self._silent_update_dialog: UpdateDialog | None = None
+        # Silently check for updates in background 3 seconds after launch
+        QTimer.singleShot(3000, self._silent_check_updates)
+
     def _build_menu(self) -> None:
         menubar = self.menuBar()
         help_menu = menubar.addMenu("&Help")
 
-        about_action = QAction(f"About {APP_NAME}...", self)
+        check_update_action = QAction("Check for Updates…", self)
+        check_update_action.setStatusTip(f"Check for newer releases of {APP_NAME}")
+        check_update_action.triggered.connect(self._check_for_updates)
+        help_menu.addAction(check_update_action)
+
+        help_menu.addSeparator()
+
+        about_action = QAction(f"About {APP_NAME}…", self)
         about_action.setStatusTip(f"Show information about {APP_NAME}")
         about_action.triggered.connect(self._show_about)
         help_menu.addAction(about_action)
+
+    def _check_for_updates(self) -> None:
+        dialog = UpdateDialog(self)
+        dialog.exec()
+
+    def _silent_check_updates(self) -> None:
+        self._silent_update_dialog = UpdateDialog(self, silent_mode=True)
 
     def _show_about(self) -> None:
         dialog = AboutDialog(self)

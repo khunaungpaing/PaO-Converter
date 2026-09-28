@@ -212,6 +212,44 @@ class AboutDialog(QDialog):
                 "padding: 2px 7px; font-size: 11px; font-weight: bold;"
             )
         badge_layout.addWidget(lic_badge)
+
+        check_update_btn = QPushButton("Check for Updates…")
+        check_update_btn.setFixedHeight(22)
+        if self._is_dark:
+            check_update_btn.setStyleSheet(
+                "QPushButton {"
+                "  background-color: transparent;"
+                "  color: #58a6ff;"
+                "  border: 1px solid rgba(88, 166, 255, 0.4);"
+                "  border-radius: 4px;"
+                "  padding: 1px 8px;"
+                "  font-size: 11px;"
+                "  font-weight: 500;"
+                "}"
+                "QPushButton:hover {"
+                "  background-color: rgba(88, 166, 255, 0.15);"
+                "  border-color: #58a6ff;"
+                "}"
+            )
+        else:
+            check_update_btn.setStyleSheet(
+                "QPushButton {"
+                "  background-color: transparent;"
+                "  color: #0969da;"
+                "  border: 1px solid rgba(9, 105, 218, 0.4);"
+                "  border-radius: 4px;"
+                "  padding: 1px 8px;"
+                "  font-size: 11px;"
+                "  font-weight: 500;"
+                "}"
+                "QPushButton:hover {"
+                "  background-color: rgba(9, 105, 218, 0.08);"
+                "  border-color: #0969da;"
+                "}"
+            )
+        check_update_btn.clicked.connect(self._check_for_updates)
+        badge_layout.addWidget(check_update_btn)
+
         badge_layout.addStretch()
 
         title_layout.addLayout(badge_layout)
@@ -363,3 +401,8 @@ class AboutDialog(QDialog):
         original_text = button.text()
         button.setText("Copied ✓")
         QTimer.singleShot(1500, lambda: button.setText(original_text))
+
+    def _check_for_updates(self) -> None:
+        from ui.update_dialog import UpdateDialog
+        dialog = UpdateDialog(self)
+        dialog.exec()

@@ -23,6 +23,7 @@ The Pa'O people (ပအိုဝ်းလူမျိုး) are an ethnic minor
 - **Intelligent DOCX Run Merging**: Joins adjacent legacy-font runs before conversion to prevent syllable split errors across Word formatting runs.
 - **Background Processing & Safe Cancellation**: Conversions run on background threads with responsive progress tracking and safe, non-destructive cancellation.
 - **In-App About & Open-Source License**: View app version, features, author credits, and the full MIT license text directly from the UI.
+- **In-App Software Updates**: Built-in GitHub Releases checker with changelog display, real-time download progress bar, and 1-click update installation for macOS & Windows.
 
 ---
 
@@ -119,15 +120,18 @@ assets/
 | [`core/engine.py`](core/engine.py) | ASCII-to-Unicode conversion pipeline and phonetic ordering rules |
 | [`core/mapping.py`](core/mapping.py) | Character lookup tables and derived character sets |
 | [`core/version.py`](core/version.py) | Application version (`v1.0.0`), author metadata, and license constants |
+| [`core/updater.py`](core/updater.py) | Semantic version comparison, platform asset matching, and GitHub API release checking |
 | [`core/file_options.py`](core/file_options.py) | Font-name normalization and size-mapping helpers |
 | [`core/cancellation.py`](core/cancellation.py) | Thread-safe cooperative cancellation handling |
 | [`ui/text_tab.py`](ui/text_tab.py) | Live text conversion interface with debounced preview |
 | [`ui/file_tab.py`](ui/file_tab.py) | File conversion interface with font and size mapping controls |
 | [`ui/about_dialog.py`](ui/about_dialog.py) | Tabbed About and Open Source MIT License dialog |
+| [`ui/update_dialog.py`](ui/update_dialog.py) | Modern software update dialog with changelog display, download progress, and 1-click install |
 | [`ui/widgets.py`](ui/widgets.py) | `DropZoneWidget` (drag-and-drop) and `PlainTextFontEdit` |
 | [`migration/docx_converter.py`](migration/docx_converter.py) | Word (.docx) document conversion and run grouping |
 | [`migration/pdf_converter.py`](migration/pdf_converter.py) | PDF text span extraction, redaction, and shaped text insertion |
 | [`workers/file_worker.py`](workers/file_worker.py) | `QThread` worker managing asynchronous file conversion |
+| [`workers/update_worker.py`](workers/update_worker.py) | `QThread` workers for asynchronous release checking and chunked downloads |
 
 ---
 
