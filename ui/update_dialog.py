@@ -14,10 +14,10 @@ from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
-    QPlainTextEdit,
     QProgressBar,
     QPushButton,
     QStackedWidget,
+    QTextBrowser,
     QVBoxLayout,
     QWidget,
 )
@@ -352,21 +352,31 @@ class UpdateDialog(QDialog):
         notes_hdr.setStyleSheet("font-size: 11.5px;")
         layout.addWidget(notes_hdr)
 
-        self.notes_edit = QPlainTextEdit()
-        self.notes_edit.setReadOnly(True)
+        self.notes_browser = QTextBrowser()
+        self.notes_browser.setOpenExternalLinks(True)
         notes_font = self.font()
         notes_font.setPointSize(10)
-        self.notes_edit.setFont(notes_font)
+        self.notes_browser.setFont(notes_font)
 
         if self._is_dark:
-            self.notes_edit.setStyleSheet(
-                "QPlainTextEdit {"
+            self.notes_browser.setStyleSheet(
+                "QTextBrowser {"
                 "  background-color: #161b22;"
                 "  color: #c9d1d9;"
                 "  border: 1px solid rgba(255, 255, 255, 0.1);"
                 "  border-radius: 6px;"
-                "  padding: 8px;"
-                "  line-height: 1.4;"
+                "  padding: 10px;"
+                "  line-height: 1.5;"
+                "}"
+                "QTextBrowser a {"
+                "  color: #58a6ff;"
+                "  text-decoration: none;"
+                "}"
+                "QTextBrowser code {"
+                "  background-color: rgba(110, 118, 129, 0.4);"
+                "  border-radius: 3px;"
+                "  padding: 2px 4px;"
+                "  font-family: monospace;"
                 "}"
                 "QScrollBar:vertical {"
                 "  border: none;"
@@ -387,14 +397,24 @@ class UpdateDialog(QDialog):
                 "}"
             )
         else:
-            self.notes_edit.setStyleSheet(
-                "QPlainTextEdit {"
+            self.notes_browser.setStyleSheet(
+                "QTextBrowser {"
                 "  background-color: #ffffff;"
                 "  color: #24292f;"
                 "  border: 1px solid #d0d7de;"
                 "  border-radius: 6px;"
-                "  padding: 8px;"
-                "  line-height: 1.4;"
+                "  padding: 10px;"
+                "  line-height: 1.5;"
+                "}"
+                "QTextBrowser a {"
+                "  color: #0969da;"
+                "  text-decoration: none;"
+                "}"
+                "QTextBrowser code {"
+                "  background-color: rgba(175, 184, 193, 0.2);"
+                "  border-radius: 3px;"
+                "  padding: 2px 4px;"
+                "  font-family: monospace;"
                 "}"
                 "QScrollBar:vertical {"
                 "  border: none;"
@@ -414,7 +434,7 @@ class UpdateDialog(QDialog):
                 "  height: 0px;"
                 "}"
             )
-        layout.addWidget(self.notes_edit, 1)
+        layout.addWidget(self.notes_browser, 1)
 
         return widget
 
@@ -698,7 +718,7 @@ class UpdateDialog(QDialog):
                 "<i>No standalone binary found for your OS. Visit GitHub to download source.</i>"
             )
 
-        self.notes_edit.setPlainText(info.body)
+        self.notes_browser.setMarkdown(info.body)
         self.stack.setCurrentIndex(self.STATE_UPDATE_AVAILABLE)
         self._update_buttons(self.STATE_UPDATE_AVAILABLE)
 
