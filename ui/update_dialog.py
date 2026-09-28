@@ -11,6 +11,7 @@ from PyQt6.QtGui import QDesktopServices, QFont, QPixmap
 from PyQt6.QtWidgets import (
     QApplication,
     QDialog,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QPlainTextEdit,
@@ -44,7 +45,7 @@ class UpdateDialog(QDialog):
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle(f"Software Update — {APP_NAME}")
-        self.setFixedSize(540, 480)
+        self.setFixedSize(510, 390)
 
         self._is_dark = self.palette().window().color().lightness() < 128
         self._silent_mode = silent_mode
@@ -53,6 +54,18 @@ class UpdateDialog(QDialog):
 
         self._check_worker: CheckUpdateWorker | None = None
         self._download_worker: DownloadUpdateWorker | None = None
+
+        # Set dialog base theme
+        if self._is_dark:
+            self.setStyleSheet(
+                "QDialog { background-color: #242424; color: #e6edf3; }"
+                "QLabel { color: #e6edf3; }"
+            )
+        else:
+            self.setStyleSheet(
+                "QDialog { background-color: #ffffff; color: #24292f; }"
+                "QLabel { color: #24292f; }"
+            )
 
         self._build_ui()
 
@@ -66,12 +79,12 @@ class UpdateDialog(QDialog):
 
     def _build_ui(self) -> None:
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(22, 18, 22, 18)
-        main_layout.setSpacing(14)
+        main_layout.setContentsMargins(20, 18, 20, 16)
+        main_layout.setSpacing(12)
 
         # Header area: App Icon + Titles
         header_layout = QHBoxLayout()
-        header_layout.setSpacing(16)
+        header_layout.setSpacing(14)
 
         icon_label = QLabel()
         icon_path = (
@@ -79,7 +92,7 @@ class UpdateDialog(QDialog):
         )
         if icon_path.is_file():
             pixmap = QPixmap(str(icon_path)).scaled(
-                54, 54, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+                50, 50, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
             )
             icon_label.setPixmap(pixmap)
         header_layout.addWidget(icon_label)
@@ -87,12 +100,12 @@ class UpdateDialog(QDialog):
         title_col = QVBoxLayout()
         title_col.setSpacing(3)
 
-        self.title_label = QLabel("Checking for Updates...")
+        self.title_label = QLabel("Checking for Updates…")
         title_color = "#ffffff" if self._is_dark else "#1f2328"
-        self.title_label.setStyleSheet(f"font-size: 17px; font-weight: bold; color: {title_color};")
+        self.title_label.setStyleSheet(f"font-size: 16px; font-weight: bold; color: {title_color};")
         title_col.addWidget(self.title_label)
 
-        self.subtitle_label = QLabel("Connecting to GitHub Releases...")
+        self.subtitle_label = QLabel("Connecting to GitHub Releases…")
         sub_color = "#8b949e" if self._is_dark else "#57606a"
         self.subtitle_label.setStyleSheet(f"font-size: 12px; color: {sub_color};")
         self.subtitle_label.setWordWrap(True)
@@ -102,7 +115,7 @@ class UpdateDialog(QDialog):
         header_layout.addStretch()
         main_layout.addLayout(header_layout)
 
-        # Separator line
+        # Subtle separator line
         sep = QLabel()
         sep.setFixedHeight(1)
         sep_color = "rgba(255, 255, 255, 0.12)" if self._is_dark else "#e1e4e8"
@@ -119,12 +132,96 @@ class UpdateDialog(QDialog):
         self.stack.addWidget(self._build_error_page())            # 5
         main_layout.addWidget(self.stack, 1)
 
-        # Bottom buttons layout
+        # Bottom buttons layout (constructed once, toggled via show/hide)
         self.bottom_layout = QHBoxLayout()
         self.bottom_layout.setSpacing(8)
+        self._build_permanent_buttons()
         main_layout.addLayout(self.bottom_layout)
 
         self._update_buttons(self.STATE_CHECKING)
+
+    # -------------------------------------------------------------------------
+    # Buttons Construction (Fixed buttons, no recreate/orphan bug)
+    # -------------------------------------------------------------------------
+
+    def _build_permanent_buttons(self) -> None:
+        # Left side buttons
+        self.btn_cancel = QPushButton("Cancel")
+        self._style_button(self.btn_cancel, "default")
+        self.btn_cancel.clicked.connect(self._on_cancel_clicked)
+        self.bottom_layout.addWidget(self.btn_cancel)
+
+        self.btn_later = QPushButton("Later")
+        self._style_button(self.btn_later, "default")
+        self.btn_later.clicked.connect(self.reject)
+        self.bottom_layout.addWidget(self.btn_later)
+
+        self.bottom_layout.addStretch()
+
+        # Right side buttons
+        self.btn_github = QPushButton("View on GitHub")
+        self._style_button(self.btn_github, "default")
+        self.btn_github.clicked.connect(self._open_web_release)
+        self.bottom_layout.addWidget(self.btn_github)
+
+        self.btn_show_folder = QPushButton("Show in Folder")
+        self._style_button(self.btn_show_folder, "default")
+        self.btn_show_folder.clicked.connect(self._show_download_folder)
+        self.bottom_layout.addWidget(self.btn_show_folder)
+
+        self.btn_download = QPushButton("Download && Update")
+        self._style_button(self.btn_download, "primary")
+        self.btn_download.clicked.connect(self._start_download)
+        self.bottom_layout.addWidget(self.btn_download)
+
+        install_label = "Install && Restart" if sys.platform.startswith("win") else "Open Disk Image"
+        self.btn_install = QPushButton(install_label)
+        self._style_button(self.btn_install, "primary")
+        self.btn_install.clicked.connect(self._install_and_launch)
+        self.bottom_layout.addWidget(self.btn_install)
+
+        self.btn_ok = QPushButton("OK")
+        self._style_button(self.btn_ok, "primary")
+        self.btn_ok.clicked.connect(self.accept)
+        self.bottom_layout.addWidget(self.btn_ok)
+
+    def _update_buttons(self, state: int) -> None:
+        # Hide all first
+        all_buttons = (
+            self.btn_cancel,
+            self.btn_later,
+            self.btn_github,
+            self.btn_show_folder,
+            self.btn_download,
+            self.btn_install,
+            self.btn_ok,
+        )
+        for b in all_buttons:
+            b.hide()
+
+        if state == self.STATE_CHECKING:
+            self.btn_cancel.show()
+
+        elif state == self.STATE_UP_TO_DATE:
+            self.btn_ok.show()
+
+        elif state == self.STATE_UPDATE_AVAILABLE:
+            self.btn_later.show()
+            self.btn_github.show()
+            if self._release_info and self._release_info.asset:
+                self.btn_download.show()
+
+        elif state == self.STATE_DOWNLOADING:
+            self.btn_cancel.show()
+
+        elif state == self.STATE_COMPLETE:
+            self.btn_later.show()
+            self.btn_show_folder.show()
+            self.btn_install.show()
+
+        elif state == self.STATE_ERROR:
+            self.btn_ok.show()
+            self.btn_github.show()
 
     # -------------------------------------------------------------------------
     # State Pages
@@ -137,38 +234,46 @@ class UpdateDialog(QDialog):
         layout.setSpacing(14)
 
         self.checking_bar = QProgressBar()
-        self.checking_bar.setRange(0, 0)  # Indeterminate animation
+        self.checking_bar.setRange(0, 0)
         self.checking_bar.setFixedHeight(6)
-        self.checking_bar.setFixedWidth(320)
+        self.checking_bar.setFixedWidth(280)
         self.checking_bar.setTextVisible(False)
         self._style_progress_bar(self.checking_bar)
         layout.addWidget(self.checking_bar, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        msg = QLabel("Querying GitHub for the newest version...")
-        msg.setStyleSheet("font-size: 12px; color: #8b949e;")
+        msg = QLabel("Checking for the latest release on GitHub…")
+        msg_color = "#8b949e" if self._is_dark else "#57606a"
+        msg.setStyleSheet(f"font-size: 12px; color: {msg_color};")
         layout.addWidget(msg, alignment=Qt.AlignmentFlag.AlignCenter)
         return widget
 
     def _build_up_to_date_page(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
-        layout.setContentsMargins(12, 16, 12, 16)
+        layout.setContentsMargins(6, 12, 6, 12)
         layout.setSpacing(12)
 
-        card = QWidget()
+        card = QFrame()
+        card.setObjectName("upToDateCard")
         card_layout = QVBoxLayout(card)
-        card_layout.setSpacing(10)
-        card_layout.setContentsMargins(16, 14, 16, 14)
+        card_layout.setSpacing(12)
+        card_layout.setContentsMargins(18, 16, 18, 16)
 
         if self._is_dark:
             card.setStyleSheet(
-                "background-color: #1e1e1e; border: 1px solid rgba(255, 255, 255, 0.08); "
-                "border-radius: 8px;"
+                "#upToDateCard {"
+                "  background-color: #1e1e1e;"
+                "  border: 1px solid rgba(255, 255, 255, 0.1);"
+                "  border-radius: 8px;"
+                "}"
             )
         else:
             card.setStyleSheet(
-                "background-color: #f6f8fa; border: 1px solid #d0d7de; "
-                "border-radius: 8px;"
+                "#upToDateCard {"
+                "  background-color: #f6f8fa;"
+                "  border: 1px solid #d0d7de;"
+                "  border-radius: 8px;"
+                "}"
             )
 
         badge_row = QHBoxLayout()
@@ -187,11 +292,13 @@ class UpdateDialog(QDialog):
         badge_row.addStretch()
         card_layout.addLayout(badge_row)
 
+        desc_color = "#e6edf3" if self._is_dark else "#24292f"
         desc = QLabel(
-            f"<b>{APP_NAME} v{__version__}</b> is currently the newest version available.<br>"
-            "You have all the latest character mappings, performance improvements, and bug fixes."
+            f'<div style="line-height: 150%; font-size: 13px; color: {desc_color};">'
+            f'<b>{APP_NAME} v{__version__}</b> is currently the newest version available.<br>'
+            'You have all the latest character mappings, performance improvements, and bug fixes.'
+            '</div>'
         )
-        desc.setStyleSheet("font-size: 12.5px; line-height: 140%;")
         desc.setWordWrap(True)
         card_layout.addWidget(desc)
 
@@ -202,24 +309,31 @@ class UpdateDialog(QDialog):
     def _build_update_available_page(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
-        layout.setContentsMargins(4, 8, 4, 8)
-        layout.setSpacing(10)
+        layout.setContentsMargins(0, 4, 0, 4)
+        layout.setSpacing(8)
 
         # Version & Asset info card
-        info_card = QWidget()
+        info_card = QFrame()
+        info_card.setObjectName("infoCard")
         info_layout = QVBoxLayout(info_card)
         info_layout.setContentsMargins(12, 10, 12, 10)
-        info_layout.setSpacing(6)
+        info_layout.setSpacing(4)
 
         if self._is_dark:
             info_card.setStyleSheet(
-                "background-color: #1e1e1e; border: 1px solid rgba(255, 255, 255, 0.08); "
-                "border-radius: 6px;"
+                "#infoCard {"
+                "  background-color: #1e1e1e;"
+                "  border: 1px solid rgba(255, 255, 255, 0.1);"
+                "  border-radius: 6px;"
+                "}"
             )
         else:
             info_card.setStyleSheet(
-                "background-color: #f6f8fa; border: 1px solid #e1e4e8; "
-                "border-radius: 6px;"
+                "#infoCard {"
+                "  background-color: #f6f8fa;"
+                "  border: 1px solid #d0d7de;"
+                "  border-radius: 6px;"
+                "}"
             )
 
         self.version_diff_label = QLabel()
@@ -233,17 +347,16 @@ class UpdateDialog(QDialog):
 
         layout.addWidget(info_card)
 
-        # Release notes section
-        notes_hdr = QLabel("<b>What's New:</b>")
-        notes_hdr.setStyleSheet("font-size: 12px;")
+        # Release notes header
+        notes_hdr = QLabel("<b>What's New in this Version:</b>")
+        notes_hdr.setStyleSheet("font-size: 11.5px;")
         layout.addWidget(notes_hdr)
 
         self.notes_edit = QPlainTextEdit()
         self.notes_edit.setReadOnly(True)
-        font = QFont()
-        font.setPointSize(10)
-        font.setStyleHint(QFont.StyleHint.SansSerif)
-        self.notes_edit.setFont(font)
+        notes_font = self.font()
+        notes_font.setPointSize(10)
+        self.notes_edit.setFont(notes_font)
 
         if self._is_dark:
             self.notes_edit.setStyleSheet(
@@ -255,6 +368,23 @@ class UpdateDialog(QDialog):
                 "  padding: 8px;"
                 "  line-height: 1.4;"
                 "}"
+                "QScrollBar:vertical {"
+                "  border: none;"
+                "  background: #161b22;"
+                "  width: 8px;"
+                "  margin: 0px;"
+                "}"
+                "QScrollBar::handle:vertical {"
+                "  background: #30363d;"
+                "  min-height: 20px;"
+                "  border-radius: 4px;"
+                "}"
+                "QScrollBar::handle:vertical:hover {"
+                "  background: #484f58;"
+                "}"
+                "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {"
+                "  height: 0px;"
+                "}"
             )
         else:
             self.notes_edit.setStyleSheet(
@@ -265,6 +395,23 @@ class UpdateDialog(QDialog):
                 "  border-radius: 6px;"
                 "  padding: 8px;"
                 "  line-height: 1.4;"
+                "}"
+                "QScrollBar:vertical {"
+                "  border: none;"
+                "  background: #f6f8fa;"
+                "  width: 8px;"
+                "  margin: 0px;"
+                "}"
+                "QScrollBar::handle:vertical {"
+                "  background: #d0d7de;"
+                "  min-height: 20px;"
+                "  border-radius: 4px;"
+                "}"
+                "QScrollBar::handle:vertical:hover {"
+                "  background: #afb8c1;"
+                "}"
+                "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {"
+                "  height: 0px;"
                 "}"
             )
         layout.addWidget(self.notes_edit, 1)
@@ -278,19 +425,19 @@ class UpdateDialog(QDialog):
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.setSpacing(14)
 
-        self.download_file_label = QLabel("Downloading update installer...")
+        self.download_file_label = QLabel("Downloading update installer…")
         self.download_file_label.setStyleSheet("font-size: 13px; font-weight: 500;")
         layout.addWidget(self.download_file_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
         self.download_bar = QProgressBar()
         self.download_bar.setRange(0, 100)
         self.download_bar.setValue(0)
-        self.download_bar.setFixedHeight(12)
-        self.download_bar.setFixedWidth(360)
+        self.download_bar.setFixedHeight(10)
+        self.download_bar.setFixedWidth(340)
         self._style_progress_bar(self.download_bar)
         layout.addWidget(self.download_bar, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        self.download_status_label = QLabel("0% (0 MB / 0 MB)")
+        self.download_status_label = QLabel("0% (0.0 MB / 0.0 MB)")
         sub_color = "#8b949e" if self._is_dark else "#57606a"
         self.download_status_label.setStyleSheet(f"font-size: 11.5px; color: {sub_color};")
         layout.addWidget(self.download_status_label, alignment=Qt.AlignmentFlag.AlignCenter)
@@ -300,23 +447,30 @@ class UpdateDialog(QDialog):
     def _build_complete_page(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
-        layout.setContentsMargins(12, 16, 12, 16)
+        layout.setContentsMargins(6, 12, 6, 12)
         layout.setSpacing(12)
 
-        card = QWidget()
+        card = QFrame()
+        card.setObjectName("completeCard")
         card_layout = QVBoxLayout(card)
-        card_layout.setSpacing(10)
-        card_layout.setContentsMargins(16, 14, 16, 14)
+        card_layout.setSpacing(12)
+        card_layout.setContentsMargins(18, 16, 18, 16)
 
         if self._is_dark:
             card.setStyleSheet(
-                "background-color: #1e1e1e; border: 1px solid rgba(255, 255, 255, 0.08); "
-                "border-radius: 8px;"
+                "#completeCard {"
+                "  background-color: #1e1e1e;"
+                "  border: 1px solid rgba(255, 255, 255, 0.1);"
+                "  border-radius: 8px;"
+                "}"
             )
         else:
             card.setStyleSheet(
-                "background-color: #f6f8fa; border: 1px solid #d0d7de; "
-                "border-radius: 8px;"
+                "#completeCard {"
+                "  background-color: #f6f8fa;"
+                "  border: 1px solid #d0d7de;"
+                "  border-radius: 8px;"
+                "}"
             )
 
         badge_row = QHBoxLayout()
@@ -335,8 +489,9 @@ class UpdateDialog(QDialog):
         badge_row.addStretch()
         card_layout.addLayout(badge_row)
 
+        desc_color = "#e6edf3" if self._is_dark else "#24292f"
         self.complete_desc = QLabel()
-        self.complete_desc.setStyleSheet("font-size: 12.5px; line-height: 140%;")
+        self.complete_desc.setStyleSheet(f"font-size: 12.5px; line-height: 150%; color: {desc_color};")
         self.complete_desc.setWordWrap(True)
         card_layout.addWidget(self.complete_desc)
 
@@ -353,23 +508,30 @@ class UpdateDialog(QDialog):
     def _build_error_page(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
-        layout.setContentsMargins(12, 16, 12, 16)
+        layout.setContentsMargins(6, 12, 6, 12)
         layout.setSpacing(12)
 
-        card = QWidget()
+        card = QFrame()
+        card.setObjectName("errorCard")
         card_layout = QVBoxLayout(card)
         card_layout.setSpacing(10)
-        card_layout.setContentsMargins(16, 14, 16, 14)
+        card_layout.setContentsMargins(18, 16, 18, 16)
 
         if self._is_dark:
             card.setStyleSheet(
-                "background-color: #271d1d; border: 1px solid rgba(255, 120, 120, 0.2); "
-                "border-radius: 8px;"
+                "#errorCard {"
+                "  background-color: #271d1d;"
+                "  border: 1px solid rgba(255, 120, 120, 0.25);"
+                "  border-radius: 8px;"
+                "}"
             )
         else:
             card.setStyleSheet(
-                "background-color: #fff8f8; border: 1px solid #f85149; "
-                "border-radius: 8px;"
+                "#errorCard {"
+                "  background-color: #fff8f8;"
+                "  border: 1px solid #f85149;"
+                "  border-radius: 8px;"
+                "}"
             )
 
         err_badge = QLabel("⚠ Notice")
@@ -436,13 +598,14 @@ class UpdateDialog(QDialog):
             )
 
     def _style_button(self, btn: QPushButton, variant: str = "default") -> None:
+        btn.setFixedHeight(30)
         if variant == "primary":
             if self._is_dark:
                 btn.setStyleSheet(
                     "QPushButton {"
                     "  background-color: #238636; color: #ffffff;"
                     "  border: 1px solid rgba(255, 255, 255, 0.2);"
-                    "  border-radius: 6px; padding: 6px 14px; font-weight: 600; font-size: 12px;"
+                    "  border-radius: 6px; padding: 4px 14px; font-weight: 600; font-size: 12px;"
                     "}"
                     "QPushButton:hover { background-color: #2ea043; }"
                 )
@@ -451,7 +614,7 @@ class UpdateDialog(QDialog):
                     "QPushButton {"
                     "  background-color: #1f883d; color: #ffffff;"
                     "  border: 1px solid rgba(27, 31, 36, 0.15);"
-                    "  border-radius: 6px; padding: 6px 14px; font-weight: 600; font-size: 12px;"
+                    "  border-radius: 6px; padding: 4px 14px; font-weight: 600; font-size: 12px;"
                     "}"
                     "QPushButton:hover { background-color: #1a7f37; }"
                 )
@@ -459,105 +622,21 @@ class UpdateDialog(QDialog):
             if self._is_dark:
                 btn.setStyleSheet(
                     "QPushButton {"
-                    "  background-color: #30363d; color: #c9d1d9;"
-                    "  border: 1px solid rgba(255, 255, 255, 0.12);"
-                    "  border-radius: 6px; padding: 6px 14px; font-size: 12px;"
+                    "  background-color: #333333; color: #e6edf3;"
+                    "  border: 1px solid rgba(255, 255, 255, 0.15);"
+                    "  border-radius: 6px; padding: 4px 14px; font-size: 12px; font-weight: 500;"
                     "}"
-                    "QPushButton:hover { background-color: #3c444d; color: #ffffff; }"
+                    "QPushButton:hover { background-color: #404040; color: #ffffff; border-color: rgba(255,255,255,0.25); }"
                 )
             else:
                 btn.setStyleSheet(
                     "QPushButton {"
                     "  background-color: #f6f8fa; color: #24292f;"
                     "  border: 1px solid #d0d7de;"
-                    "  border-radius: 6px; padding: 6px 14px; font-size: 12px;"
+                    "  border-radius: 6px; padding: 4px 14px; font-size: 12px; font-weight: 500;"
                     "}"
                     "QPushButton:hover { background-color: #eaeef2; border-color: #afb8c1; }"
                 )
-
-    # -------------------------------------------------------------------------
-    # Button Bar Updates
-    # -------------------------------------------------------------------------
-
-    def _update_buttons(self, state: int) -> None:
-        # Clear existing buttons
-        while self.bottom_layout.count():
-            item = self.bottom_layout.takeAt(0)
-            w = item.widget()
-            if w is not None:
-                w.deleteLater()
-
-        if state == self.STATE_CHECKING:
-            self.bottom_layout.addStretch()
-            cancel_btn = QPushButton("Cancel")
-            self._style_button(cancel_btn, "default")
-            cancel_btn.clicked.connect(self.reject)
-            self.bottom_layout.addWidget(cancel_btn)
-
-        elif state == self.STATE_UP_TO_DATE:
-            self.bottom_layout.addStretch()
-            close_btn = QPushButton("OK")
-            self._style_button(close_btn, "primary")
-            close_btn.clicked.connect(self.accept)
-            self.bottom_layout.addWidget(close_btn)
-
-        elif state == self.STATE_UPDATE_AVAILABLE:
-            later_btn = QPushButton("Later")
-            self._style_button(later_btn, "default")
-            later_btn.clicked.connect(self.reject)
-            self.bottom_layout.addWidget(later_btn)
-
-            self.bottom_layout.addStretch()
-
-            web_btn = QPushButton("View on GitHub")
-            self._style_button(web_btn, "default")
-            web_btn.clicked.connect(self._open_web_release)
-            self.bottom_layout.addWidget(web_btn)
-
-            # Only show Download button if an asset exists for current platform
-            if self._release_info and self._release_info.asset:
-                download_btn = QPushButton("Download & Update")
-                self._style_button(download_btn, "primary")
-                download_btn.clicked.connect(self._start_download)
-                self.bottom_layout.addWidget(download_btn)
-
-        elif state == self.STATE_DOWNLOADING:
-            self.bottom_layout.addStretch()
-            cancel_download_btn = QPushButton("Cancel Download")
-            self._style_button(cancel_download_btn, "default")
-            cancel_download_btn.clicked.connect(self._cancel_download)
-            self.bottom_layout.addWidget(cancel_download_btn)
-
-        elif state == self.STATE_COMPLETE:
-            later_btn = QPushButton("Close")
-            self._style_button(later_btn, "default")
-            later_btn.clicked.connect(self.accept)
-            self.bottom_layout.addWidget(later_btn)
-
-            self.bottom_layout.addStretch()
-
-            folder_btn = QPushButton("Show in Folder")
-            self._style_button(folder_btn, "default")
-            folder_btn.clicked.connect(self._show_download_folder)
-            self.bottom_layout.addWidget(folder_btn)
-
-            action_text = "Install & Restart" if sys.platform.startswith("win") else "Open Installer"
-            install_btn = QPushButton(action_text)
-            self._style_button(install_btn, "primary")
-            install_btn.clicked.connect(self._install_and_launch)
-            self.bottom_layout.addWidget(install_btn)
-
-        elif state == self.STATE_ERROR:
-            self.bottom_layout.addStretch()
-            close_btn = QPushButton("Close")
-            self._style_button(close_btn, "default")
-            close_btn.clicked.connect(self.reject)
-            self.bottom_layout.addWidget(close_btn)
-
-            web_btn = QPushButton("Open GitHub Releases")
-            self._style_button(web_btn, "primary")
-            web_btn.clicked.connect(self._open_web_release)
-            self.bottom_layout.addWidget(web_btn)
 
     # -------------------------------------------------------------------------
     # Actions & Logic
@@ -604,9 +683,10 @@ class UpdateDialog(QDialog):
         self.title_label.setText(f"New Version Available: v{info.version}")
         self.subtitle_label.setText(f"A new update of {APP_NAME} is available to download.")
 
+        new_color = "#3fb950" if self._is_dark else "#1a7f37"
         self.version_diff_label.setText(
             f"<b>Current Version:</b> v{info.current_version} &nbsp; ➔ &nbsp; "
-            f"<b>New Version:</b> <span style='color: #2da44e;'>v{info.version}</span>"
+            f"<b>New Version:</b> <span style='color: {new_color}; font-weight: bold;'>v{info.version}</span>"
         )
 
         if info.asset:
@@ -627,8 +707,8 @@ class UpdateDialog(QDialog):
             return
 
         asset = self._release_info.asset
-        self.title_label.setText("Downloading Update...")
-        self.subtitle_label.setText(f"Downloading {asset.name}...")
+        self.title_label.setText("Downloading Update…")
+        self.subtitle_label.setText(f"Downloading {asset.name}…")
         self.download_file_label.setText(f"Downloading {asset.name}")
         self.download_bar.setValue(0)
         self.download_status_label.setText(f"0% (0.0 MB / {asset.size_str})")
@@ -667,7 +747,7 @@ class UpdateDialog(QDialog):
         else:
             self.complete_desc.setText(
                 f"<b>{Path(file_path).name}</b> is ready.<br><br>"
-                "Click <b>Open Installer</b> to mount the disk image, then drag the application "
+                "Click <b>Open Disk Image</b> to mount the installer, then drag Pa-O Converter "
                 "to your Applications folder to replace the older version."
             )
 
@@ -686,9 +766,11 @@ class UpdateDialog(QDialog):
         if self._release_info:
             self._show_update_available(self._release_info)
 
-    def _cancel_download(self) -> None:
+    def _on_cancel_clicked(self) -> None:
         if self._download_worker and self._download_worker.isRunning():
             self._download_worker.cancel()
+        else:
+            self.reject()
 
     def _open_web_release(self) -> None:
         url = (
