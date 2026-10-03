@@ -25,42 +25,52 @@ _EXT_SAVE_FILTER = {
 
 
 def _find_font_file(family: str) -> str | None:
-    """Try to locate a .ttf/.otf file for *family* in system font directories."""
+    """Try to locate a .ttf/.otf/.ttc file for *family* in system and local font directories."""
     import sys as _sys
     from pathlib import Path
 
-    dirs: list[Path] = []
+    dirs: list[Path] = [
+        Path(__file__).resolve().parent.parent / "assets" / "fonts",
+    ]
     if _sys.platform == "darwin":
-        dirs = [
+        dirs.extend([
             Path.home() / "Library" / "Fonts",
             Path("/Library/Fonts"),
             Path("/System/Library/Fonts"),
             Path("/System/Library/Fonts/Supplemental"),
-        ]
+        ])
     elif _sys.platform.startswith("win"):
         windir = os.environ.get("WINDIR", r"C:\Windows")
-        dirs = [Path(windir) / "Fonts"]
+        dirs.append(Path(windir) / "Fonts")
+        localappdata = os.environ.get("LOCALAPPDATA")
+        if localappdata:
+            dirs.append(Path(localappdata) / "Microsoft" / "Windows" / "Fonts")
+        else:
+            dirs.append(Path.home() / "AppData" / "Local" / "Microsoft" / "Windows" / "Fonts")
     else:
-        dirs = [
+        dirs.extend([
             Path.home() / ".local" / "share" / "fonts",
             Path.home() / ".fonts",
             Path("/usr/share/fonts"),
             Path("/usr/local/share/fonts"),
-        ]
+        ])
 
     target = family.casefold().replace(" ", "").replace("-", "")
+    partial_match: str | None = None
 
     for font_dir in dirs:
         if not font_dir.is_dir():
             continue
         for path in font_dir.rglob("*"):
-            if not path.is_file() or path.suffix.lower() not in (".ttf", ".otf"):
+            if not path.is_file() or path.suffix.lower() not in (".ttf", ".otf", ".ttc"):
                 continue
             stem = path.stem.casefold().replace(" ", "").replace("-", "")
-            if target == stem or target in stem:
+            if target == stem:
                 return str(path)
+            if (target in stem or stem in target) and partial_match is None:
+                partial_match = str(path)
 
-    return None
+    return partial_match
 
 class FileConvertTab(QWidget):
     def __init__(self) -> None:
@@ -95,6 +105,8 @@ class FileConvertTab(QWidget):
 
         # Output font: name + choose button in one compact row
         output_row = QHBoxLayout()
+        output_row.setContentsMargins(0, 0, 0, 0)
+        output_row.setSpacing(8)
         default_font_id = QFontDatabase.addApplicationFont(str(UNICODE_FONT))
         default_families = (
             QFontDatabase.applicationFontFamilies(default_font_id)
@@ -103,6 +115,7 @@ class FileConvertTab(QWidget):
         self.output_family_edit = QLineEdit(
             default_families[0] if default_families else "KhamThaton-Exp"
         )
+        self.output_family_edit.setMinimumWidth(220)
         self.output_family_edit.setToolTip(
             "Font family written into converted DOCX runs and used for PDF output. "
             "Click 'Choose Font…' to select a different font file."
@@ -112,8 +125,8 @@ class FileConvertTab(QWidget):
         font_menu.addAction("System Fonts…", self._pick_system_font)
         font_menu.addAction("Font File…", self._browse_font_file)
         output_browse.setMenu(font_menu)
-        output_row.addWidget(self.output_family_edit)
-        output_row.addWidget(output_browse)
+        output_row.addWidget(self.output_family_edit, 1)
+        output_row.addWidget(output_browse, 0)
         font_form.addRow("Output font name:", output_row)
 
         self.size_mapping_edit = QLineEdit(DEFAULT_SIZE_MAPPING_TEXT)
@@ -150,13 +163,22 @@ class FileConvertTab(QWidget):
 
     def _pick_system_font(self) -> None:
         """Let the user pick a system-installed font via the platform dialog."""
+        from PyQt6.QtGui import QFont
         from PyQt6.QtWidgets import QFontDialog
 
-        font, ok = QFontDialog.getFont(self)
-        if not ok:
+        current_family = self.output_family_edit.text().strip() or "KhamThaton-Exp"
+        initial_font = QFont(current_family, 12)
+
+        dialog = QFontDialog(initial_font, self)
+        dialog.setWindowTitle("Select System Font")
+        # Native macOS NSFontPanel lacks an OK button and closing it rejects the dialog.
+        # Explicitly use Qt's dialog so the user has explicit OK and Cancel buttons.
+        dialog.setOption(QFontDialog.FontDialogOption.DontUseNativeDialog, True)
+
+        if dialog.exec() != QFontDialog.DialogCode.Accepted:
             return
 
-        family = font.family()
+        family = dialog.selectedFont().family()
         self.output_family_edit.setText(family)
 
         # Try to find the corresponding font file for PDF embedding

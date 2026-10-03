@@ -79,7 +79,7 @@ ASCII_TO_UNICODE_MAP: dict[str, str] = {
     "ä": "္ဆ", "å": "္တ",
     "æ": "္ဖ", "é": "္န",
     "ö": "္စ", "ú": "္က",
-    "’": "္လ",
+    "’": "္လ", "†": "ဏ္ဍ",
 
     # အခြားစာလုံးများ
     "£": "ဣ", "¤": "၎",
@@ -153,7 +153,7 @@ ASCII_PRE_CLEANUP: dict[str, str] = {
     "dI": "ှို", "Id": "ှို",
     "DI": "ှီု", "ID": "ှီု",
     "J~": "~J", "C~": f"{LA_PAN}{HTUN_PLA}",
-    "Of": "ဉ်", "OH": "ဉံ", "Od":"ဉိ", "OD;": "ဦး", "Om": "ဉာ"
+    "Of": "ဉ်", "OH": "ဉံ", "Od":"ဉိ", "OD;": "ဦး", "Om": "ဉာ", "Oö": ""
 }
 
 # Pre-sorted keys (longest first) to avoid partial-match replacement bugs

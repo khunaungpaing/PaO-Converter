@@ -96,7 +96,7 @@ def convert_pao_ascii_to_unicode(text: str) -> str:
     text = re.sub(r"([\u1000-\u102A])(\u103E)?င်္", r"င်္\1\2", text)
 
     # Parentheses post-fix (WinPaOh '…' နဲ့ '•' ကို Unicode ကွင်းစ/ကွင်းပိတ် သို့ အဆုံးမှ ပြောင်းခြင်း)
-    text = text.replace("…", "(").replace("•", ")")
+    text = text.replace("…", "(").replace("•", ")").replace("ႋႋႋ", "...")
 
     # Phase 5: NFC normalisation
     return unicodedata.normalize("NFC", text)
