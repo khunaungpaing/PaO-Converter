@@ -19,21 +19,50 @@ from .mapping import (
     ASCII_PREFIX_VOWELS,
     ASCII_MEDIALS,
     ASCII_VOWELS_AND_MEDIALS,
+    ASCII_NYA_FOLLOWERS,
     FILTERED_CONSONANTS,
     QUOTES_MAP,
     SORTED_MAP_KEYS,
     SORTED_QUOTE_KEYS,
     ASCII_TO_UNICODE_MAP,
+    PLACEHOLDER_OPEN_DOUBLE,
+    PLACEHOLDER_CLOSE_DOUBLE,
+    PLACEHOLDER_OPEN_SINGLE,
+    PLACEHOLDER_CLOSE_SINGLE,
 )
 
 
 def resolve_zero_and_wa(text: str) -> str:
     """Replace ASCII '0' with ဝ (wa, U+101D) or leave as ၀ (zero) by context."""
+    # 1. 0 adjacent to any non-digit Unicode Myanmar character (e.g. င် from pre-cleanup)
+    non_digit_myanmar = r"[\u1000-\u103F\u104A\u104B\u104E-\u109F]"
+    text = re.sub(rf"0({non_digit_myanmar})", r"ဝ\1", text)
+    text = re.sub(rf"({non_digit_myanmar})0", r"\1ဝ", text)
+
+    # 2. 0 adjacent to ASCII vowels, medials, diacritics, and tone marks
     text = re.sub(rf"0({ASCII_VOWELS_AND_MEDIALS})", r"ဝ\1", text)
     text = re.sub(rf"({ASCII_VOWELS_AND_MEDIALS})0", r"\1ဝ", text)
-    text = re.sub(rf"0([{FILTERED_CONSONANTS}])", r"ဝ\1", text)
-    text = re.sub(rf"([{FILTERED_CONSONANTS}])0", r"\1ဝ", text)
+
+    # 3. 0 adjacent to ASCII consonants
+    text = re.sub(rf"0([{re.escape(FILTERED_CONSONANTS)}])", r"ဝ\1", text)
+    text = re.sub(rf"([{re.escape(FILTERED_CONSONANTS)}])0", r"\1ဝ", text)
+
+    # 4. Standalone 00 (not surrounded by digits) represents ဝဝ (e.g. ဝဝဖြိုးဖြိုး)
+    text = re.sub(r"(?<![0-9၀-၉])00(?![0-9၀-၉])", "ဝဝ", text)
+
     return text
+
+
+def resolve_u_and_nya(text: str) -> str:
+    """Replace ASCII 'O' with ဉ (nya-lay, U+1009) or leave as ဥ (u, U+1025) by context.
+
+    In WinPaOh/Win ASCII, 'O' represents both ဉ and ဥ:
+    - Followed by any subjoined consonant (ပါဌ်ဆင့်), asat 'f' (်), 'm' (ာ),
+      'H' (ံ), or 'd' (ိ): ALWAYS ဉ (Nya-lay).
+    - Standalone or followed by 'D' (ီ, as in OD; -> ဦး) or normal consonants
+      (e.g., Owk -> ဥတု, Oyrm -> ဥပမာ): remains ဥ.
+    """
+    return re.sub(rf"O([{re.escape(ASCII_NYA_FOLLOWERS)}])", r"ဉ\1", text)
 
 
 def convert_pao_ascii_to_unicode(text: str) -> str:
@@ -48,13 +77,16 @@ def convert_pao_ascii_to_unicode(text: str) -> str:
     # Phase 1.2: ဝ vs ၀
     text = resolve_zero_and_wa(text)
 
+    # Phase 1.3: ဉ vs ဥ
+    text = resolve_u_and_nya(text)
+
     # Phase 1.5: quotes
     for key in SORTED_QUOTE_KEYS:
         text = text.replace(key, QUOTES_MAP[key])
 
     # Phase 2: reorder prefix vowels + medials
     pv = ASCII_PREFIX_VOWELS
-    fc = FILTERED_CONSONANTS
+    fc = FILTERED_CONSONANTS + "ဝ"
     md = ASCII_MEDIALS
 
     # Reorder each source sequence once. Sequential substitutions can match
@@ -95,8 +127,14 @@ def convert_pao_ascii_to_unicode(text: str) -> str:
     # 3. Kinzi (င်္) Ordering
     text = re.sub(r"([\u1000-\u102A])(\u103E)?င်္", r"င်္\1\2", text)
 
-    # Parentheses post-fix (WinPaOh '…' နဲ့ '•' ကို Unicode ကွင်းစ/ကွင်းပိတ် သို့ အဆုံးမှ ပြောင်းခြင်း)
+    # Parentheses and quotes post-fix
     text = text.replace("…", "(").replace("•", ")").replace("ႋႋႋ", "...")
+    text = (
+        text.replace(PLACEHOLDER_OPEN_DOUBLE, "\u201C")
+        .replace(PLACEHOLDER_CLOSE_DOUBLE, "\u201D")
+        .replace(PLACEHOLDER_OPEN_SINGLE, "\u2018")
+        .replace(PLACEHOLDER_CLOSE_SINGLE, "\u2019")
+    )
 
     # Phase 5: NFC normalisation
     return unicodedata.normalize("NFC", text)

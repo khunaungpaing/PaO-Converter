@@ -117,20 +117,33 @@ ASCII_CONSONANTS: str = "".join(
 ASCII_PREFIX_VOWELS: str = "ajBNM"
 
 # Consonants that can appear adjacent to '0' to identify it as ဝ (wa)
-FILTERED_CONSONANTS: str = (
-    "".join(c for c in ASCII_CONSONANTS if c not in ASCII_PREFIX_VOWELS) + "0"
+FILTERED_CONSONANTS: str = "".join(
+    c for c in ASCII_CONSONANTS if c not in ASCII_PREFIX_VOWELS
 )
 
-ASCII_VOWELS_AND_MEDIALS: str = r"[aDd kKlLhHjJGSfYUmg]"
+ASCII_VOWELS_AND_MEDIALS: str = r"[aDd kKlLhHjJGSfYUmgC`~_;<>.]"
 
-ASCII_MEDIALS: str = "sGSjBNMQWRT~_"
+ASCII_MEDIALS: str = "sGSjBNMQWRT~_C`§ß—‚"
 
-# Quotes resolved before main mapping to avoid double-substitution
+# All subjoined ASCII characters whose Unicode mapping starts with '္' (Virama)
+ASCII_SUBJOINED: str = "".join(
+    k for k, v in ASCII_TO_UNICODE_MAP.items() if v.startswith("္")
+)
+# Characters that when following 'O' indicate it is ဉ (Nya-lay) rather than ဥ (U)
+ASCII_NYA_FOLLOWERS: str = ASCII_SUBJOINED + "fmHd"
+
+# Safe placeholder markers to protect quote conversions across Phase 3
+PLACEHOLDER_OPEN_DOUBLE: str = "\uFFF0"   # “
+PLACEHOLDER_CLOSE_DOUBLE: str = "\uFFF1"  # ”
+PLACEHOLDER_OPEN_SINGLE: str = "\uFFF2"   # ‘
+PLACEHOLDER_CLOSE_SINGLE: str = "\uFFF3"  # ’
+
+# Quotes resolved before main mapping using safe placeholders to avoid double-substitution
 QUOTES_MAP: dict[str, str] = {
-    "]]": "\u201C",
-    "}}": "\u201D",
-    "]": "\u2019",
-    "}": "\u2019",
+    "]]": PLACEHOLDER_OPEN_DOUBLE,
+    "}}": PLACEHOLDER_CLOSE_DOUBLE,
+    "]": PLACEHOLDER_OPEN_SINGLE,
+    "}": PLACEHOLDER_CLOSE_SINGLE,
 }
 
 ASCII_PRE_CLEANUP: dict[str, str] = {
@@ -152,8 +165,8 @@ ASCII_PRE_CLEANUP: dict[str, str] = {
 
     "dI": "ှို", "Id": "ှို",
     "DI": "ှီု", "ID": "ှီု",
-    "J~": "~J", "C~": f"{LA_PAN}{HTUN_PLA}",
-    "Of": "ဉ်", "OH": "ဉံ", "Od":"ဉိ", "OD;": "ဦး", "Om": "ဉာ", "Oö": ""
+    "J~": "~J", "C~": "_", "`~": "_",
+    "OD;": "ဦး",
 }
 
 # Pre-sorted keys (longest first) to avoid partial-match replacement bugs
