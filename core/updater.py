@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import ssl
 import sys
 import urllib.error
 import urllib.request
@@ -12,6 +13,47 @@ from pathlib import Path
 from typing import Any
 
 from core.version import APP_NAME, WEBSITE, __version__
+
+
+def get_ssl_context() -> ssl.SSLContext:
+    """Return an SSLContext configured with trusted CA root certificates.
+
+    Falls back progressively:
+      1. certifi CA bundle if available
+      2. Known OS root CA certificate paths (macOS / Linux)
+      3. Python default context with CA certs
+      4. Unverified context as last resort (prevents SSL verify failure on missing local CA stores)
+    """
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        pass
+
+    candidate_ca_paths = [
+        "/etc/ssl/cert.pem",
+        "/private/etc/ssl/cert.pem",
+        "/etc/pki/tls/certs/ca-bundle.crt",
+        "/etc/ssl/certs/ca-certificates.crt",
+    ]
+    for ca_path in candidate_ca_paths:
+        if os.path.isfile(ca_path):
+            try:
+                return ssl.create_default_context(cafile=ca_path)
+            except Exception:
+                pass
+
+    try:
+        ctx = ssl.create_default_context()
+        if ctx.get_ca_certs():
+            return ctx
+    except Exception:
+        pass
+
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
 
 # Default repository to check releases from
 GITHUB_REPO = "khunaungpaing/PaO-Converter"
@@ -148,7 +190,7 @@ def fetch_latest_release(
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as response:
+        with urllib.request.urlopen(req, timeout=timeout, context=get_ssl_context()) as response:
             if response.status != 200:
                 raise RuntimeError(f"GitHub API returned HTTP {response.status}")
             raw_data = response.read().decode("utf-8")

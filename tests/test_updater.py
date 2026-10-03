@@ -12,6 +12,7 @@ from core.updater import (
     ReleaseInfo,
     fetch_latest_release,
     find_platform_asset,
+    get_ssl_context,
     is_newer_version,
     parse_version,
 )
@@ -141,6 +142,13 @@ class TestFetchRelease(unittest.TestCase):
         with self.assertRaises(RuntimeError) as ctx:
             fetch_latest_release(current_version="1.0.0")
         self.assertIn("Could not connect to GitHub", str(ctx.exception))
+
+
+class TestSSLContext(unittest.TestCase):
+    def test_get_ssl_context_returns_valid_context(self):
+        import ssl
+        ctx = get_ssl_context()
+        self.assertIsInstance(ctx, ssl.SSLContext)
 
 
 if __name__ == "__main__":

@@ -9,7 +9,12 @@ from threading import Event
 
 from PyQt6.QtCore import QThread, pyqtSignal
 
-from core.updater import ReleaseInfo, fetch_latest_release, get_default_download_path
+from core.updater import (
+    ReleaseInfo,
+    fetch_latest_release,
+    get_default_download_path,
+    get_ssl_context,
+)
 from core.version import __version__
 
 
@@ -86,7 +91,7 @@ class DownloadUpdateWorker(QThread):
             # Ensure destination directory exists
             dest.parent.mkdir(parents=True, exist_ok=True)
 
-            with urllib.request.urlopen(req, timeout=30.0) as response:
+            with urllib.request.urlopen(req, timeout=30.0, context=get_ssl_context()) as response:
                 content_length = response.headers.get("Content-Length")
                 total_bytes = int(content_length) if content_length else self.expected_size
                 downloaded_bytes = 0
