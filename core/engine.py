@@ -18,7 +18,6 @@ from .mapping import (
     ASCII_PRE_CLEANUP,
     ASCII_PREFIX_VOWELS,
     ASCII_MEDIALS,
-    ASCII_VOWELS_AND_MEDIALS,
     ASCII_NYA_FOLLOWERS,
     FILTERED_CONSONANTS,
     QUOTES_MAP,
@@ -33,24 +32,30 @@ from .mapping import (
 
 
 def resolve_zero_and_wa(text: str) -> str:
-    """Replace ASCII '0' with ဝ (wa, U+101D) or leave as ၀ (zero) by context."""
-    # 1. 0 adjacent to any non-digit Unicode Myanmar character (e.g. င် from pre-cleanup)
-    non_digit_myanmar = r"[\u1000-\u103F\u104A\u104B\u104E-\u109F]"
-    text = re.sub(rf"0({non_digit_myanmar})", r"ဝ\1", text)
-    text = re.sub(rf"({non_digit_myanmar})0", r"\1ဝ", text)
+    """Replace ASCII '0' with ဝ (wa, U+101D) or leave as ၀ (zero) by context.
 
-    # 2. 0 adjacent to ASCII vowels, medials, diacritics, and tone marks
-    text = re.sub(rf"0({ASCII_VOWELS_AND_MEDIALS})", r"ဝ\1", text)
-    text = re.sub(rf"({ASCII_VOWELS_AND_MEDIALS})0", r"\1ဝ", text)
+    In WinPaOh/Win ASCII keyboards, key '0' is used to type the consonant ဝ (wa).
+    Only when '0' is adjacent to other digits (1-9, Myanmar/Pa-O digits) or part
+    of a number/decimal/time/date should it remain digit 0 (and later convert to ၀).
+    Standalone '0' (or '0' in text/words) represents ဝ.
+    """
+    non_zero_digits = r"[1-9၁-၉\U000116D1-\U000116D9]"
+    num_delims = r"[\.,:/]"
 
-    # 3. 0 adjacent to ASCII consonants
-    text = re.sub(rf"0([{re.escape(FILTERED_CONSONANTS)}])", r"ဝ\1", text)
-    text = re.sub(rf"([{re.escape(FILTERED_CONSONANTS)}])0", r"\1ဝ", text)
+    def replace_zeros(match: re.Match) -> str:
+        start = match.start()
+        end = match.end()
+        prefix = text[max(0, start - 3):start]
+        suffix = text[end:min(len(text), end + 3)]
 
-    # 4. Standalone 00 (not surrounded by digits) represents ဝဝ (e.g. ဝဝဖြိုးဖြိုး)
-    text = re.sub(r"(?<![0-9၀-၉])00(?![0-9၀-၉])", "ဝဝ", text)
+        if re.search(rf"(?:{non_zero_digits}|[0-9၀-၉]{num_delims})$", prefix):
+            return match.group(0)
+        if re.match(rf"^(?:{non_zero_digits}|{num_delims}[0-9၀-၉])", suffix):
+            return match.group(0)
 
-    return text
+        return "ဝ" * len(match.group(0))
+
+    return re.sub(r"0+", replace_zeros, text)
 
 
 def resolve_u_and_nya(text: str) -> str:
@@ -104,10 +109,10 @@ def convert_pao_ascii_to_unicode(text: str) -> str:
     # Phase 4: Unicode ordering post-fixes
 
     # 1. Vowels & Medials Ordering
-    # Myanmar medial order: ျ, ြ, ွ, ှ (works after every consonant).
-    medial_order = "ျြွှ"
+    # Myanmar/Pa-O medial order: ျ, ြ, ွ, ၞ, ှ (works after every consonant).
+    medial_order = "ျြွၞှ"
     text = re.sub(
-        r"[ျြွှ]{2,}",
+        r"[ျြွၞှ]{2,}",
         lambda match: "".join(
             sorted(match.group(), key=medial_order.index)
         ),
@@ -115,9 +120,32 @@ def convert_pao_ascii_to_unicode(text: str) -> str:
     )
 
     text = re.sub(r"ေဝ", "ဝေ", text)
-    text = re.sub(r"ဲွ", "ွဲ", text)
-    text = re.sub(r"ဲြ", "ြဲ", text)
-    text = re.sub(r"ဲျ", "ျဲ", text)
+
+    # Move medials before preceding vowels
+    # e.g., နိှ (edS) -> နှိ, ညိှ (ndS) -> ညှိ, မိှ (rdS) -> မှိ, ဲွ -> ွဲ
+    text = re.sub(
+        r"([\u102B-\u1032\u1036]+)([ျြွၞှ]+)",
+        r"\2\1",
+        text,
+    )
+
+    # Sort medials again in case moving vowels made medials adjacent
+    text = re.sub(
+        r"[ျြွၞှ]{2,}",
+        lambda match: "".join(
+            sorted(match.group(), key=medial_order.index)
+        ),
+        text,
+    )
+
+    # Subjoined Consonants (ပါဌ်ဆင့်) Ordering
+    # Move subjoined consonants before preceding vowels/diacritics
+    # e.g., မိ္မ ("rd®u -> ဓမ္မိက, rd® -> မ္မိ)
+    text = re.sub(
+        r"([\u102B-\u1032\u1036-\u1038\u108A\u108B]+)(္[\u1000-\u1021](?:[\u103B-\u103E\u105E])*)",
+        r"\2\1",
+        text,
+    )
 
     # 2. Upper/Lower Diacritics Ordering
     text = re.sub(r"\u1030\u102D", "\u102D\u1030", text)  # ူ + ိ  -> ိ + ူ
