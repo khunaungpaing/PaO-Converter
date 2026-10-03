@@ -162,7 +162,11 @@ def convert_pao_ascii_to_unicode(text: str) -> str:
     text = re.sub(r"\u102F\u102D", "\u102D\u102F", text)  # ု + ိ  -> ိ + ု
     text = re.sub(r"\u1030\u102D", "\u102D\u1030", text)  # ူ + ိ  -> ိ + ူ
     text = re.sub(r"\u1036\u1030", "\u1030\u1036", text)  # ံ + ူ  -> ူ + ံ
-    text = re.sub(r"\u1037([\u102D\u102E\u102F\u1030])", r"\1\u1037", text)
+    text = re.sub(
+        r"([\u1037\u1038\u108A\u108B\u108F]+)([\u102B-\u1032\u1036]+)",
+        r"\2\1",
+        text,
+    )
 
     # Parentheses and quotes post-fix
     text = text.replace("…", "(").replace("•", ")").replace("ႋႋႋ", "...")

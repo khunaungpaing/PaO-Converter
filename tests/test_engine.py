@@ -109,6 +109,15 @@ class TestMedialOrdering(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(convert_pao_ascii_to_unicode(source), expected)
 
+    def test_tone_and_vowel_ordering(self) -> None:
+        """Tone marks like auk-ka-myit (့) must follow vowels regardless of typing order."""
+        for source, expected in (
+            ("tvhJwdV<", "အလဲ့တှိုႏ"),
+            ("+vJYwdV<", "ဂလဲ့တှိုႏ"),
+        ):
+            with self.subTest(source=source):
+                self.assertEqual(convert_pao_ascii_to_unicode(source), expected)
+
 
 class TestUVsNyaResolution(unittest.TestCase):
     def test_nya_lay_combinations(self) -> None:
