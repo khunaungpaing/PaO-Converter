@@ -114,7 +114,7 @@ ASCII_CONSONANTS: str = "".join(
 )
 
 # ေ (a) and ြ (j, B, N, M) are written before their base consonant in ASCII
-ASCII_PREFIX_VOWELS: str = "ajBNM"
+ASCII_PREFIX_VOWELS: str = "ajBNM—‚"
 
 # Consonants that can appear adjacent to '0' to identify it as ဝ (wa)
 FILTERED_CONSONANTS: str = "".join(
