@@ -128,28 +128,70 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          name: Pa-O Converter ${{ github.ref_name }} — Initial Public Release
           files: release_assets/*
           generate_release_notes: true
           draft: false
           prerelease: false
           body: |
-            ## Installation
+            We are excited to announce the first official public release of **Pa-O Converter**! 🎉
 
-            | Platform | File |
-            |---|---|
-            | macOS | `PaOConverter_vX.X.X_macOS.dmg` — drag app to Applications |
-            | Windows | `PaOConverter_vX.X.X_Windows_Setup.exe` — run the installer |
-
-            ### ⚠️ First-launch security warnings (expected for unsigned open-source apps)
-
-            **macOS — Gatekeeper:** Run this once in Terminal after downloading:
-            ```bash
-            xattr -cr ~/Downloads/PaOConverter_*_macOS.dmg
-            ```
-            Or go to **System Settings → Privacy & Security → "Open Anyway"**
-
-            **Windows — SmartScreen:** Click **More info → Run anyway**.
-            Or right-click the `.exe` → **Properties → check Unblock → OK** before running.
+            Pa-O Converter is a free and open-source desktop utility designed for the Pa-O language community to seamlessly convert legacy Win/ASCII encoded text and documents into standard Pa-O Unicode (including characters from the **Unicode 16 Extended-C** range).
 
             ---
-            *Pa-O Converter is free and open-source (MIT License). No data is collected.*
+
+            ### 🌟 Highlights & Features
+
+            #### 1. ⚡ Live Text Conversion
+            - **Real-Time Conversion**: Type or paste legacy Win/ASCII text in one pane and instantly see standard Unicode text in the other.
+            - **Character Badges & Independent Font Controls**: Easily monitor character counts and adjust text sizes independently for both panels.
+            - **1-Click Copy**: Copy the converted Unicode text directly to your clipboard.
+
+            #### 2. 📄 Batch & Document Conversion
+            - **Drag-and-Drop Support**: Simply drag `.docx`, `.txt`, or `.pdf` files straight into the app.
+            - **Microsoft Word (.docx)**: Preserves document structure and intelligently merges split font runs to prevent syllable breakage.
+            - **PDF Conversion**: Converts text-based PDFs either into a newly formatted **PDF (.pdf)** preserving visual layout or extracts it to **Plain Text (.txt)**.
+            - **Selective Font Conversion**: Target only specific legacy fonts (default: `kothupaoh1`) while leaving other Myanmar or English texts untouched.
+            - **Custom Font & Size Mapping**: Bundled with the official `KhamThaton-Exp` Unicode font, with support for any system-installed or custom font file (`.ttf` / `.otf`).
+
+            #### 3. 🎨 Modern & Polished Interface
+            - **Dark / Light Theme Support**: Automatically matches your system preferences with high-contrast readability.
+            - **Native Experience**: Clean macOS and Windows desktop UI with responsive progress indicators and non-destructive cancellation.
+
+            #### 4. 🔄 In-App Updates
+            - Built-in GitHub update checker that alerts you to newer versions and allows **1-click direct download and update** for future releases.
+
+            ---
+
+            ### 📥 Downloads & Installation
+
+            | Platform | Installer / Package | Installation |
+            |---|---|---|
+            | **macOS** | `PaOConverter_${{ github.ref_name }}_macOS.dmg` | Open DMG and drag `Pa-O Converter` to `Applications` |
+            | **Windows** | `PaOConverter_${{ github.ref_name }}_Windows_Setup.exe` | Run the Setup installer |
+
+            ---
+
+            ### ⚠️ First-Launch Security Notice (Open Source App)
+
+            Since this software is freshly released and community-built, your operating system may display a security prompt on the first launch:
+
+            **macOS (Gatekeeper):**
+            If macOS says the app *"cannot be opened because it is from an unidentified developer"*:
+            - Go to **System Settings → Privacy & Security**, scroll down to the Security section, and click **"Open Anyway"**.
+            - Or run this command once in Terminal after downloading:
+              ```bash
+              xattr -cr ~/Downloads/PaOConverter_*_macOS.dmg
+              ```
+
+            **Windows (SmartScreen):**
+            If Windows displays *"Windows protected your PC"*:
+            - Click **More info** → **Run anyway**.
+            - Or right-click the `.exe` → **Properties** → check **Unblock** → **OK** before running.
+
+            ---
+
+            ### 🤝 Open Source & Community Feedback
+            - **Source Code**: [khunaungpaing/PaO-Converter](https://github.com/khunaungpaing/PaO-Converter)
+            - **License**: MIT License (free and open-source; no personal data collected)
+            - **Issues & Suggestions**: If you encounter any conversion bugs or have feature suggestions, please report them on [GitHub Issues](https://github.com/khunaungpaing/PaO-Converter/issues).
