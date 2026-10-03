@@ -18,6 +18,7 @@ from .mapping import (
     ASCII_PRE_CLEANUP,
     ASCII_PREFIX_VOWELS,
     ASCII_MEDIALS,
+    ASCII_SUBJOINED,
     ASCII_NYA_FOLLOWERS,
     FILTERED_CONSONANTS,
     QUOTES_MAP,
@@ -92,13 +93,14 @@ def convert_pao_ascii_to_unicode(text: str) -> str:
     # Phase 2: reorder prefix vowels + medials
     pv = ASCII_PREFIX_VOWELS
     fc = FILTERED_CONSONANTS + "ဝ"
+    sub = ASCII_SUBJOINED
     md = ASCII_MEDIALS
 
     # Reorder each source sequence once. Sequential substitutions can match
     # an already-moved prefix against the next syllable's consonant.
     text = re.sub(
-        rf"([{pv}])([{pv}]?)([{fc}])([{md}]*)",
-        lambda match: match[3] + match[2] + match[4] + match[1],
+        rf"([{pv}])([{pv}]?)([{fc}])([{sub}]*)([{md}]*)",
+        lambda match: match[3] + match[4] + match[2] + match[5] + match[1],
         text,
     )
 
@@ -109,8 +111,8 @@ def convert_pao_ascii_to_unicode(text: str) -> str:
     # Phase 4: Unicode ordering post-fixes
 
     # 1. Vowels & Medials Ordering
-    # Myanmar/Pa-O medial order: ျ, ြ, ွ, ၞ, ှ (works after every consonant).
-    medial_order = "ျြွၞှ"
+    # Myanmar/Pa-O medial order: ျ, ြ, ၞ, ွ, ှ (works after every consonant).
+    medial_order = "ျြၞွှ"
     text = re.sub(
         r"[ျြွၞှ]{2,}",
         lambda match: "".join(
@@ -139,21 +141,28 @@ def convert_pao_ascii_to_unicode(text: str) -> str:
     )
 
     # Subjoined Consonants (ပါဌ်ဆင့်) Ordering
-    # Move subjoined consonants before preceding vowels/diacritics
-    # e.g., မိ္မ ("rd®u -> ဓမ္မိက, rd® -> မ္မိ)
+    # Move subjoined consonants before preceding medials, vowels, and diacritics
+    # e.g., မိ္မ ("rd®u -> ဓမ္မိက, rd® -> မ္မိ), နြ္ဒေ (ajE´ -> န္ဒြေ)
     text = re.sub(
-        r"([\u102B-\u1032\u1036-\u1038\u108A\u108B]+)(္[\u1000-\u1021](?:[\u103B-\u103E\u105E])*)",
+        r"([\u103B-\u103E\u105E\u102B-\u1032\u1036-\u1038\u108A\u108B]+)(္[\u1000-\u1021](?:[\u103B-\u103E\u105E])*)",
         r"\2\1",
         text,
     )
 
-    # 2. Upper/Lower Diacritics Ordering
+    # 2. Kinzi (င်္) Ordering
+    # Move Kinzi before preceding consonant and its medials
+    # e.g., ချင်္ိ (ocsØ) -> င်္ချိ (သင်္ချိုင်း), ကြင်္ (oMuF) -> င်္ကြ (သင်္ကြန်), ဂြင်္ိ (odN+Ø) -> င်္ဂြိ (သိင်္ဂြိုဟ်)
+    text = re.sub(
+        r"([\u1000-\u102A])([ျြွၞှ]*)([\u102B-\u1032\u1036]*)င်္",
+        r"င်္\1\2\3",
+        text,
+    )
+
+    # 3. Upper/Lower Diacritics Ordering
+    text = re.sub(r"\u102F\u102D", "\u102D\u102F", text)  # ု + ိ  -> ိ + ု
     text = re.sub(r"\u1030\u102D", "\u102D\u1030", text)  # ူ + ိ  -> ိ + ူ
     text = re.sub(r"\u1036\u1030", "\u1030\u1036", text)  # ံ + ူ  -> ူ + ံ
     text = re.sub(r"\u1037([\u102D\u102E\u102F\u1030])", r"\1\u1037", text)
-
-    # 3. Kinzi (င်္) Ordering
-    text = re.sub(r"([\u1000-\u102A])(\u103E)?င်္", r"င်္\1\2", text)
 
     # Parentheses and quotes post-fix
     text = text.replace("…", "(").replace("•", ")").replace("ႋႋႋ", "...")

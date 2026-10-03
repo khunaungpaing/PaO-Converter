@@ -123,7 +123,8 @@ FILTERED_CONSONANTS: str = "".join(
 
 ASCII_VOWELS_AND_MEDIALS: str = r"[aDd kKlLhHjJGSfYUmgC`~_;<>.]"
 
-ASCII_MEDIALS: str = "sGSjBNMQWRT~_C`§ß—‚"
+# Medials typed AFTER their base consonant in ASCII
+ASCII_MEDIALS: str = "sGSQWRT~_C`§ß"
 
 # All subjoined ASCII characters whose Unicode mapping starts with '္' (Virama)
 ASCII_SUBJOINED: str = "".join(
@@ -173,6 +174,7 @@ ASCII_PRE_CLEANUP: dict[str, str] = {
     "~C": "_", "~`": "_",
     "CS": "_", "`S": "_",
     "SC": "_", "S`": "_",
+    "GC": "CG", "G`": "`G",
     "OD;": "ဦး",
 }
 

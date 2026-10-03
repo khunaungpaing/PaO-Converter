@@ -16,6 +16,23 @@ class TestMedialOrdering(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(convert_pao_ascii_to_unicode(source), expected)
 
+    def test_adjacent_prefix_and_medial_syllables(self) -> None:
+        """Adjacent syllables where the second starts with prefix ya-yit (j, B, N, M)
+        must not have their ya-yit swallowed by the preceding syllable's post-medials.
+        """
+        for source, expected in (
+            ("ajcG", "ခြွေ"),
+            ("jcm<", "ခြာႏ"),
+            ("ajcGjcm<", "ခြွေခြာႏ"),
+            ("ajcjcm<", "ခြေခြာႏ"),
+            ("jcm<ajcG", "ခြာႏခြွေ"),
+            ("ajcGajcG", "ခြွေခြွေ"),
+            ("aAGjcm<", "ဗွေခြာႏ"),
+            ("acGjcm<", "ခွေခြာႏ"),
+        ):
+            with self.subTest(source=source):
+                self.assertEqual(convert_pao_ascii_to_unicode(source), expected)
+
     def test_ra_is_ordered_before_wa_for_every_consonant(self) -> None:
         self.assertEqual(convert_pao_ascii_to_unicode("jzGD;"), "ဖြွီး")
 
@@ -45,6 +62,19 @@ class TestMedialOrdering(unittest.TestCase):
             ("yS`J", "ပၞှဲ"),
             ("yCSJ", "ပၞှဲ"),
             ("ySCJ", "ပၞှဲ"),
+        ):
+            with self.subTest(source=source):
+                self.assertEqual(convert_pao_ascii_to_unicode(source), expected)
+
+    def test_la_pan_and_wa_swe_medial_ordering(self) -> None:
+        """La-pan (ၞ) must precede Wa-swe (ွ) in Pa-O Unicode syllable ordering."""
+        for source, expected in (
+            ("wuGCD<", "တကၞွီႏ"),
+            ("wuCGD<", "တကၞွီႏ"),
+            ("uCGD<", "ကၞွီႏ"),
+            ("uGCD<", "ကၞွီႏ"),
+            ("y`GD<", "ပၞွီႏ"),
+            ("yG`D<", "ပၞွီႏ"),
         ):
             with self.subTest(source=source):
                 self.assertEqual(convert_pao_ascii_to_unicode(source), expected)
@@ -182,8 +212,27 @@ class TestSubjoinedConsonantOrdering(unittest.TestCase):
             ("rk®", "မ္မု"),
             ("wdÉ", "တ္တွိ"),
             ("arwåm", "မေတ္တာ"),
+            ("ajE´<", "န္ဒြေႏ"),
+            ("qJ<£ajE´<", "ဆဲႏဣန္ဒြေႏ"),
         )
         for source, expected in test_cases:
             with self.subTest(source=source):
                 self.assertEqual(convert_pao_ascii_to_unicode(source), expected)
+
+
+class TestKinziOrdering(unittest.TestCase):
+    def test_kinzi_with_consonants_and_medials(self) -> None:
+        """Kinzi (င်္) must precede the base consonant and any medials,
+        even when typed with composite glyphs like Ø (င်္ိ), Ð (င်္ီ), ø (င်္ံ).
+        """
+        test_cases = (
+            ("ocsØKif;", "သင်္ချိုင်း"),
+            ("oMuFef", "သင်္ကြန်"),
+            ("odN+ØK[f", "သိင်္ဂြိုဟ်"),
+            ("r+Fvm", "မင်္ဂလာ"),
+        )
+        for source, expected in test_cases:
+            with self.subTest(source=source):
+                self.assertEqual(convert_pao_ascii_to_unicode(source), expected)
+
 
