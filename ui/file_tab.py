@@ -6,12 +6,16 @@ import os
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
     QLabel, QPushButton, QProgressBar, QLineEdit,
-    QFileDialog, QMessageBox, QMenu,
+    QFileDialog, QMessageBox, QMenu, QCompleter,
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFontDatabase
 
-from core.file_options import DEFAULT_SIZE_MAPPING_TEXT, parse_size_mapping
+from core.file_options import (
+    DEFAULT_SIZE_MAPPING_TEXT,
+    DEFAULT_SOURCE_FONTS,
+    parse_size_mapping,
+)
 from migration.pdf_converter import UNICODE_FONT
 from workers.file_worker import FileConvertWorker
 from .widgets import DropZoneWidget
@@ -92,15 +96,23 @@ class FileConvertTab(QWidget):
         # -- Settings --
         font_form = QFormLayout()
         font_form.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
+        font_form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
         font_form.setContentsMargins(0, 4, 0, 4)
 
-        self.source_font_edit = QLineEdit("kothupaoh1")
-        self.source_font_edit.setFixedWidth(250)
+        self.source_font_edit = QLineEdit("")
+        self.source_font_edit.setMinimumWidth(280)
         self.source_font_edit.setPlaceholderText("Leave empty to convert every font")
         self.source_font_edit.setToolTip(
             "Only text using this source font will be converted. "
             "Font matching ignores case, spaces, and PDF subset prefixes."
         )
+        self.source_font_edit.setClearButtonEnabled(True)
+
+        font_completer = QCompleter(DEFAULT_SOURCE_FONTS, self.source_font_edit)
+        font_completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        font_completer.setFilterMode(Qt.MatchFlag.MatchContains)
+        self.source_font_edit.setCompleter(font_completer)
+
         font_form.addRow("Convert only font:", self.source_font_edit)
 
         # Output font: name + choose button in one compact row
@@ -130,6 +142,8 @@ class FileConvertTab(QWidget):
         font_form.addRow("Output font name:", output_row)
 
         self.size_mapping_edit = QLineEdit(DEFAULT_SIZE_MAPPING_TEXT)
+        self.size_mapping_edit.setMinimumWidth(280)
+        self.size_mapping_edit.setClearButtonEnabled(True)
         self.size_mapping_edit.setToolTip(
             "Source-to-output point sizes. Sizes not listed here are preserved."
         )

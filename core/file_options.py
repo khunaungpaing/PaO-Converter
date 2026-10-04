@@ -5,8 +5,27 @@ from __future__ import annotations
 import re
 
 
-DEFAULT_SIZE_MAPPING: dict[float, float] = {16.0: 12.0, 18.0: 14.0, 20.0: 16.0}
-DEFAULT_SIZE_MAPPING_TEXT = "16:12, 18:14, 20:16"
+DEFAULT_SIZE_MAPPING: dict[float, float] = {16.0: 12.0, 17.0: 13.0, 18.0: 14.0, 19.0: 15.0, 20.0: 16.0}
+DEFAULT_SIZE_MAPPING_TEXT = "16:12, 17:13, 18:14, 19:15, 20:16"
+
+# List of known legacy / source fonts for auto-completion in file conversion.
+# You can manually add more font names to this list as needed.
+DEFAULT_SOURCE_FONTS: list[str] = [
+    "kothupaoh1",
+    "kothupaoh2 ",
+    "kothupaoh3 ",
+    "kothupaoh4 ",
+    "kothupaoh5 ",
+    "kothupaoh Number 1 Renew",
+    "kothupaoh1 Number Renew",
+    "kothupaoh1 Numbering Renew",
+    "kothupaoh1Alphabet Renew",
+    "kothupaoh1 Renew",
+    "kothupaoh2 Renew",
+    "kothupaoh3 Renew",
+    "kothupaoh4 Renew",
+    "kothupaoh5 renew",
+]
 
 
 def normalize_font_name(name: str | None) -> str:

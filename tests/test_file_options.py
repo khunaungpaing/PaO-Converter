@@ -3,6 +3,7 @@
 import unittest
 
 from core.file_options import (
+    DEFAULT_SOURCE_FONTS,
     font_names_match,
     mapped_font_size,
     parse_size_mapping,
@@ -24,3 +25,38 @@ class TestFileOptions(unittest.TestCase):
         mapping = {16.0: 12.0, 18.0: 14.0, 20.0: 16.0}
         self.assertEqual(mapped_font_size(18.01, mapping), 14.0)
         self.assertEqual(mapped_font_size(24.0, mapping), 24.0)
+
+    def test_default_source_fonts_contains_expected_fonts(self) -> None:
+        self.assertIsInstance(DEFAULT_SOURCE_FONTS, list)
+        expected = [
+            "kothupaoh Number 1 Renew",
+            "kothupaoh1",
+            "kothupaoh1 Number Renew",
+            "kothupaoh1 Numbering Renew",
+            "kothupaoh1 Renew",
+            "kothupaoh1Alphabet Renew",
+            "kothupaoh2 Renew",
+            "kothupaoh3 Renew",
+            "kothupaoh4 Renew",
+            "kothupaoh5 renew",
+        ]
+        for font in expected:
+            self.assertIn(font, DEFAULT_SOURCE_FONTS)
+
+    def test_empty_source_font_matches_all(self) -> None:
+        # Empty string or None matches any font in document
+        self.assertTrue(font_names_match("Helvetica", ""))
+        self.assertTrue(font_names_match("Times New Roman", None))
+        self.assertTrue(font_names_match("kothupaoh1", ""))
+
+    def test_file_convert_tab_completer(self) -> None:
+        import sys
+        from PyQt6.QtWidgets import QApplication
+        from ui.file_tab import FileConvertTab
+
+        app = QApplication.instance() or QApplication(sys.argv)
+        tab = FileConvertTab()
+        self.assertEqual(tab.source_font_edit.text(), "")
+        completer = tab.source_font_edit.completer()
+        self.assertIsNotNone(completer)
+        self.assertEqual(completer.model().stringList(), DEFAULT_SOURCE_FONTS)

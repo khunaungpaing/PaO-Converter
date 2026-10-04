@@ -18,7 +18,7 @@ The Pa'O people (ပအိုဝ်းလူမျိုး) are an ethnic minor
 - **Live Text Conversion**: Converts Win/ASCII text to Unicode in real-time as you type or paste, with a 300ms debounce.
 - **Drag-and-Drop File Conversion**: Converts `.txt`, `.docx`, and text-based `.pdf` files by dropping them directly into the window or selecting via file browser.
 - **Smart PDF Handling**: When selecting a PDF, the app prompts you to choose between creating a converted **PDF (.pdf)** (preserving original layout and artwork) or extracting as **Text (.txt)**.
-- **Selective Font Conversion**: Converts only text using a specified legacy font (default: `kothupaoh1`), leaving other languages or fonts untouched.
+- **Selective Font Conversion**: Converts only text using a specified legacy font with auto-complete suggestions (e.g., `kothupaoh1`), or leave empty by default to convert all fonts.
 - **Flexible Font Selection**: Choose an output font by picking any font installed on your system or browsing for a custom `.ttf`/`.otf` file. Defaults to bundled `KhamThaton-Exp`.
 - **Intelligent DOCX Run Merging**: Joins adjacent legacy-font runs before conversion to prevent syllable split errors across Word formatting runs.
 - **Background Processing & Safe Cancellation**: Conversions run on background threads with responsive progress tracking and safe, non-destructive cancellation.
@@ -91,7 +91,7 @@ python main.py
 
 1. **Select or Drop File**: Drag and drop a `.txt`, `.docx`, or `.pdf` file into the drop zone, or click **Select File…**.
 2. **PDF Output Format**: If you selected a PDF file, choose whether to save as **PDF (.pdf)** or **Text (.txt)** in the pop-up prompt.
-3. **Source Font Filter**: Set the legacy font name to convert (default: `kothupaoh1`). Leave empty to convert all fonts.
+3. **Source Font Filter**: Set a legacy font name to convert using auto-complete (e.g. `kothupaoh1`), or leave empty (default) to convert all fonts.
 4. **Output Font**: The default font is `KhamThaton-Exp`. Click **Choose Font…** to pick from **System Fonts…** or browse a **Font File…**.
 5. **Size Mapping**: Adjust source-to-output point size adjustments (default: `16:12, 18:14, 20:16`).
 6. Click **Cancel** at any time during conversion to stop safely without saving corrupted files.
