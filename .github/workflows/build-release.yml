@@ -151,7 +151,7 @@ jobs:
             - **Drag-and-Drop Support**: Simply drag `.docx`, `.txt`, or `.pdf` files straight into the app.
             - **Microsoft Word (.docx)**: Preserves document structure and intelligently merges split font runs to prevent syllable breakage.
             - **PDF Conversion**: Converts text-based PDFs either into a newly formatted **PDF (.pdf)** preserving visual layout or extracts it to **Plain Text (.txt)**.
-            - **Selective Font Conversion**: Target only specific legacy fonts (default: `kothupaoh1`) while leaving other Myanmar or English texts untouched.
+            - **Selective Font Conversion**: Converts only text using a specified legacy font with auto-complete suggestions (e.g., `kothupaoh1`), or leave empty by default to convert all fonts.
             - **Custom Font & Size Mapping**: Bundled with the official `KhamThaton-Exp` Unicode font, with support for any system-installed or custom font file (`.ttf` / `.otf`).
 
             #### 3. 🎨 Modern & Polished Interface
