@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import os
 
-from PyQt6.QtCore import QMimeData, Qt, pyqtSignal
-from PyQt6.QtGui import QDragEnterEvent, QDragLeaveEvent, QDropEvent
+from PyQt6.QtCore import QEvent, QMimeData, Qt, pyqtSignal
+from PyQt6.QtGui import QDragEnterEvent, QDragLeaveEvent, QDropEvent, QMouseEvent
 from PyQt6.QtWidgets import QLabel, QTextEdit
 
 
@@ -25,14 +25,15 @@ class DropZoneWidget(QLabel):
     """Theme-adaptive label that accepts file drag-and-drop with visual feedback.
 
     Emits ``fileDropped(str)`` with the absolute path when a supported
-    file is dropped.
+    file is dropped, or ``clicked()`` when clicked.
     """
 
     fileDropped = pyqtSignal(str)
+    clicked = pyqtSignal()
 
     def __init__(
         self,
-        placeholder: str = "Drag & drop a file here\nTXT · DOCX · PDF",
+        placeholder: str = "Drag & drop a file here\nTXT · DOCX · PDF\n(or click to browse)",
         parent: QLabel | None = None,
     ) -> None:
         super().__init__(placeholder, parent)
@@ -42,6 +43,7 @@ class DropZoneWidget(QLabel):
         self.setMinimumHeight(76)
         self.setAcceptDrops(True)
         self.setWordWrap(True)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
         self._apply_style("idle")
 
     def _is_dark(self) -> bool:
@@ -121,15 +123,53 @@ class DropZoneWidget(QLabel):
         self.setText(self._placeholder)
         self._apply_style("idle")
 
-    def showFile(self, name: str) -> None:
-        """Display the selected file name."""
+    def showFile(self, path: str) -> None:
+        """Display the selected file name and size with clear re-selection hint."""
         self._has_file = True
-        self.setText(f"📄  {name}")
+        name = os.path.basename(path)
+        size_str = ""
+        if os.path.isfile(path):
+            try:
+                sz = os.path.getsize(path)
+                if sz < 1024:
+                    size_str = f"{sz} B"
+                elif sz < 1024 * 1024:
+                    size_str = f"{sz / 1024:.1f} KB"
+                else:
+                    size_str = f"{sz / (1024 * 1024):.1f} MB"
+            except OSError:
+                pass
+
+        sub_info = f" ({size_str})" if size_str else ""
+        sub_color = "#8b949e" if self._is_dark() else "#57606a"
+        self.setText(
+            f"<div style='line-height: 140%;'>"
+            f"<span style='font-size: 14px; font-weight: 600;'>📄  {name}{sub_info}</span><br>"
+            f"<span style='font-size: 12px; color: {sub_color};'>Click to change file or drag another here</span>"
+            f"</div>"
+        )
         self._apply_style("filled")
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        if not self.isEnabled():
+            return
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+        super().mousePressEvent(event)
+
+    def changeEvent(self, event: QEvent) -> None:
+        if event.type() == QEvent.Type.EnabledChange:
+            self.setCursor(
+                Qt.CursorShape.PointingHandCursor if self.isEnabled() else Qt.CursorShape.ArrowCursor
+            )
+        super().changeEvent(event)
 
     # -- Drag-and-drop events ------------------------------------------
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
+        if not self.isEnabled() or not self.acceptDrops():
+            event.ignore()
+            return
         if event.mimeData().hasUrls():
             urls = event.mimeData().urls()
             if urls and self._is_supported(urls[0].toLocalFile()):
@@ -139,15 +179,20 @@ class DropZoneWidget(QLabel):
         event.ignore()
 
     def dragLeaveEvent(self, event: QDragLeaveEvent) -> None:
+        if not self.isEnabled() or not self.acceptDrops():
+            return
         self._apply_style("filled" if self._has_file else "idle")
 
     def dropEvent(self, event: QDropEvent) -> None:
+        if not self.isEnabled() or not self.acceptDrops():
+            event.ignore()
+            return
         urls = event.mimeData().urls()
         if urls:
             path = urls[0].toLocalFile()
             if self._is_supported(path):
                 event.acceptProposedAction()
-                self.showFile(os.path.basename(path))
+                self.showFile(path)
                 self.fileDropped.emit(path)
                 return
         event.ignore()

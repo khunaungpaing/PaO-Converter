@@ -24,6 +24,7 @@ from migration.pdf_converter import UNICODE_FONT, convert_pdf_file, convert_pdf_
 
 class FileConvertWorker(QThread):
     progress = pyqtSignal(int)
+    status = pyqtSignal(str)
     finished = pyqtSignal(str)
     error = pyqtSignal(str)
     cancelled = pyqtSignal(str)
@@ -112,6 +113,7 @@ class FileConvertWorker(QThread):
             output_font_path=self.output_font_path,
             size_mapping=self.size_mapping,
             cancelled=self._cancel_event.is_set,
+            status_callback=self.status.emit,
         )
 
     def _convert_pdf_to_txt(self) -> None:
@@ -121,4 +123,5 @@ class FileConvertWorker(QThread):
             self.progress.emit,
             source_font=self.source_font,
             cancelled=self._cancel_event.is_set,
+            status_callback=self.status.emit,
         )

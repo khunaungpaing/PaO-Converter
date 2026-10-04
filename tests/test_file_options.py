@@ -60,3 +60,46 @@ class TestFileOptions(unittest.TestCase):
         completer = tab.source_font_edit.completer()
         self.assertIsNotNone(completer)
         self.assertEqual(completer.model().stringList(), DEFAULT_SOURCE_FONTS)
+
+    def test_file_convert_tab_actions(self) -> None:
+        import sys
+        from PyQt6.QtWidgets import QApplication
+        from ui.file_tab import FileConvertTab
+
+        app = QApplication.instance() or QApplication(sys.argv)
+        tab = FileConvertTab()
+
+        # Initial state: no file loaded
+        self.assertFalse(tab.convert_btn.isEnabled())
+        self.assertFalse(tab.clear_btn.isEnabled())
+        self.assertTrue(tab.select_btn.isEnabled())
+        self.assertFalse(tab.cancel_btn.isEnabled())
+
+        # Select a file
+        tab._set_selected_file("/fake/path/sample.docx")
+        self.assertEqual(tab._selected_file_path, "/fake/path/sample.docx")
+        self.assertTrue(tab.convert_btn.isEnabled())
+        self.assertTrue(tab.clear_btn.isEnabled())
+        self.assertTrue(tab.select_btn.isEnabled())
+
+        # Clear the file
+        tab._on_clear()
+        self.assertIsNone(tab._selected_file_path)
+        self.assertFalse(tab.convert_btn.isEnabled())
+        self.assertFalse(tab.clear_btn.isEnabled())
+
+        # Simulate restored controls after conversion
+        tab._set_selected_file("/fake/path/sample.docx")
+        tab._restore_controls()
+        self.assertTrue(tab.convert_btn.isEnabled())
+        self.assertTrue(tab.clear_btn.isEnabled())
+        self.assertTrue(tab.select_btn.isEnabled())
+        self.assertTrue(tab.drop_zone.isEnabled())
+        self.assertTrue(tab.drop_zone.acceptDrops())
+
+        # When worker is running, selecting or dropping files is guarded
+        FakeWorker = type("FakeWorker", (), {"isRunning": lambda s: True})
+        tab._worker = FakeWorker()
+        tab._on_file_selected("/fake/path/another.docx")
+        self.assertEqual(tab._selected_file_path, "/fake/path/sample.docx")
+

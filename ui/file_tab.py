@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
     QLabel, QPushButton, QProgressBar, QLineEdit,
     QFileDialog, QMessageBox, QMenu, QCompleter,
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QEvent
 from PyQt6.QtGui import QFontDatabase
 
 from core.file_options import (
@@ -81,6 +81,7 @@ class FileConvertTab(QWidget):
         super().__init__()
         self._worker: FileConvertWorker | None = None
         self._output_font_path: str = str(UNICODE_FONT)
+        self._selected_file_path: str | None = None
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -89,8 +90,9 @@ class FileConvertTab(QWidget):
         layout.setSpacing(12)
 
         # -- Drop zone --
-        self.drop_zone = DropZoneWidget("Drag & drop a file here\nTXT · DOCX · PDF")
-        self.drop_zone.fileDropped.connect(self._handle_source_file)
+        self.drop_zone = DropZoneWidget()
+        self.drop_zone.fileDropped.connect(self._on_file_selected)
+        self.drop_zone.clicked.connect(self._on_select)
         layout.addWidget(self.drop_zone)
 
         # -- Settings --
@@ -132,13 +134,13 @@ class FileConvertTab(QWidget):
             "Font family written into converted DOCX runs and used for PDF output. "
             "Click 'Choose Font…' to select a different font file."
         )
-        output_browse = QPushButton("Choose Font…")
-        font_menu = QMenu(output_browse)
+        self.choose_font_btn = QPushButton("Choose Font…")
+        font_menu = QMenu(self.choose_font_btn)
         font_menu.addAction("System Fonts…", self._pick_system_font)
         font_menu.addAction("Font File…", self._browse_font_file)
-        output_browse.setMenu(font_menu)
+        self.choose_font_btn.setMenu(font_menu)
         output_row.addWidget(self.output_family_edit, 1)
-        output_row.addWidget(output_browse, 0)
+        output_row.addWidget(self.choose_font_btn, 0)
         font_form.addRow("Output font name:", output_row)
 
         self.size_mapping_edit = QLineEdit(DEFAULT_SIZE_MAPPING_TEXT)
@@ -153,14 +155,33 @@ class FileConvertTab(QWidget):
 
         # -- Action buttons --
         btn_row = QHBoxLayout()
+        btn_row.setSpacing(10)
+
         self.select_btn = QPushButton("Select File…")
+        self.select_btn.setToolTip("Select or change the file to convert")
         self.select_btn.clicked.connect(self._on_select)
         btn_row.addWidget(self.select_btn)
+
+        self.convert_btn = QPushButton("Convert")
+        self.convert_btn.setToolTip("Convert the selected file")
+        self.convert_btn.setEnabled(False)
+        self.convert_btn.clicked.connect(self._on_convert)
+        btn_row.addWidget(self.convert_btn)
+
+        self.clear_btn = QPushButton("Clear")
+        self.clear_btn.setToolTip("Clear current file and reset")
+        self.clear_btn.setEnabled(False)
+        self.clear_btn.clicked.connect(self._on_clear)
+        btn_row.addWidget(self.clear_btn)
+
         self.cancel_btn = QPushButton("Cancel")
+        self.cancel_btn.setToolTip("Cancel running conversion")
         self.cancel_btn.setEnabled(False)
         self.cancel_btn.clicked.connect(self._on_cancel)
         btn_row.addWidget(self.cancel_btn)
         layout.addLayout(btn_row)
+
+        self._apply_button_styles()
 
         # -- Progress + status --
         self.progress = QProgressBar()
@@ -172,6 +193,166 @@ class FileConvertTab(QWidget):
         self.status_label = QLabel("")
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.status_label)
+
+    def _is_dark(self) -> bool:
+        return self.palette().window().color().lightness() < 128
+
+    def _apply_button_styles(self) -> None:
+        """Apply uniform height, radius, and theme-adaptive colors to all action buttons."""
+        is_dark = self._is_dark()
+        if is_dark:
+            neutral_style = (
+                "QPushButton {"
+                "  border: 1px solid rgba(255, 255, 255, 0.18);"
+                "  border-radius: 6px;"
+                "  padding: 6px 16px;"
+                "  background-color: rgba(255, 255, 255, 0.08);"
+                "  color: #e6edf3;"
+                "  font-size: 13px;"
+                "  font-weight: 500;"
+                "}"
+                "QPushButton:hover {"
+                "  background-color: rgba(255, 255, 255, 0.16);"
+                "  color: #ffffff;"
+                "  border-color: rgba(255, 255, 255, 0.35);"
+                "}"
+                "QPushButton:pressed {"
+                "  background-color: rgba(255, 255, 255, 0.12);"
+                "}"
+                "QPushButton:disabled {"
+                "  background-color: rgba(255, 255, 255, 0.03);"
+                "  color: rgba(255, 255, 255, 0.25);"
+                "  border-color: rgba(255, 255, 255, 0.06);"
+                "}"
+            )
+            primary_style = (
+                "QPushButton {"
+                "  border: 1px solid rgba(255, 255, 255, 0.15);"
+                "  border-radius: 6px;"
+                "  padding: 6px 16px;"
+                "  background-color: #238636;"
+                "  color: #ffffff;"
+                "  font-size: 13px;"
+                "  font-weight: 600;"
+                "}"
+                "QPushButton:hover {"
+                "  background-color: #2ea043;"
+                "  border-color: rgba(255, 255, 255, 0.3);"
+                "}"
+                "QPushButton:pressed {"
+                "  background-color: #196c2e;"
+                "}"
+                "QPushButton:disabled {"
+                "  background-color: rgba(255, 255, 255, 0.03);"
+                "  color: rgba(255, 255, 255, 0.25);"
+                "  border-color: rgba(255, 255, 255, 0.06);"
+                "}"
+            )
+            clear_style = (
+                "QPushButton {"
+                "  border: 1px solid rgba(255, 255, 255, 0.18);"
+                "  border-radius: 6px;"
+                "  padding: 6px 16px;"
+                "  background-color: rgba(255, 255, 255, 0.08);"
+                "  color: #e6edf3;"
+                "  font-size: 13px;"
+                "  font-weight: 500;"
+                "}"
+                "QPushButton:hover {"
+                "  background-color: rgba(248, 81, 73, 0.15);"
+                "  color: #ff7b72;"
+                "  border-color: rgba(248, 81, 73, 0.4);"
+                "}"
+                "QPushButton:pressed {"
+                "  background-color: rgba(248, 81, 73, 0.25);"
+                "}"
+                "QPushButton:disabled {"
+                "  background-color: rgba(255, 255, 255, 0.03);"
+                "  color: rgba(255, 255, 255, 0.25);"
+                "  border-color: rgba(255, 255, 255, 0.06);"
+                "}"
+            )
+        else:
+            neutral_style = (
+                "QPushButton {"
+                "  border: 1px solid #d0d7de;"
+                "  border-radius: 6px;"
+                "  padding: 6px 16px;"
+                "  background-color: #f6f8fa;"
+                "  color: #24292f;"
+                "  font-size: 13px;"
+                "  font-weight: 500;"
+                "}"
+                "QPushButton:hover {"
+                "  background-color: #f3f4f6;"
+                "  color: #0969da;"
+                "  border-color: #afb8c1;"
+                "}"
+                "QPushButton:pressed {"
+                "  background-color: #e5e7eb;"
+                "}"
+                "QPushButton:disabled {"
+                "  background-color: #f6f8fa;"
+                "  color: #8c959f;"
+                "  border-color: #e5e7eb;"
+                "}"
+            )
+            primary_style = (
+                "QPushButton {"
+                "  border: 1px solid rgba(27, 31, 36, 0.15);"
+                "  border-radius: 6px;"
+                "  padding: 6px 16px;"
+                "  background-color: #1f883d;"
+                "  color: #ffffff;"
+                "  font-size: 13px;"
+                "  font-weight: 600;"
+                "}"
+                "QPushButton:hover {"
+                "  background-color: #1a7f37;"
+                "}"
+                "QPushButton:pressed {"
+                "  background-color: #15662b;"
+                "}"
+                "QPushButton:disabled {"
+                "  background-color: #f6f8fa;"
+                "  color: #8c959f;"
+                "  border-color: #e5e7eb;"
+                "}"
+            )
+            clear_style = (
+                "QPushButton {"
+                "  border: 1px solid #d0d7de;"
+                "  border-radius: 6px;"
+                "  padding: 6px 16px;"
+                "  background-color: #f6f8fa;"
+                "  color: #24292f;"
+                "  font-size: 13px;"
+                "  font-weight: 500;"
+                "}"
+                "QPushButton:hover {"
+                "  background-color: #ffebe9;"
+                "  color: #cf222e;"
+                "  border-color: #ff8182;"
+                "}"
+                "QPushButton:pressed {"
+                "  background-color: #ffcecb;"
+                "}"
+                "QPushButton:disabled {"
+                "  background-color: #f6f8fa;"
+                "  color: #8c959f;"
+                "  border-color: #e5e7eb;"
+                "}"
+            )
+
+        self.select_btn.setStyleSheet(neutral_style)
+        self.convert_btn.setStyleSheet(primary_style)
+        self.clear_btn.setStyleSheet(clear_style)
+        self.cancel_btn.setStyleSheet(neutral_style)
+
+    def changeEvent(self, event: QEvent) -> None:
+        if event.type() == QEvent.Type.PaletteChange:
+            self._apply_button_styles()
+        super().changeEvent(event)
 
     # ------------------------------------------------------------------
 
@@ -230,15 +411,52 @@ class FileConvertTab(QWidget):
         self.output_family_edit.setText(families[0])
 
     def _on_select(self) -> None:
-        """Open a file dialog, then forward the chosen path to the handler."""
+        """Open a file dialog to choose a source file."""
+        if self._worker and self._worker.isRunning():
+            return
         src, _ = QFileDialog.getOpenFileName(self, "Select Source File", "", _FILTER)
         if not src:
             return
-        self.drop_zone.showFile(os.path.basename(src))
-        self._handle_source_file(src)
+        self._set_selected_file(src)
+
+    def _on_file_selected(self, path: str) -> None:
+        """Handle file dropped onto the drop zone."""
+        if self._worker and self._worker.isRunning():
+            return
+        self._set_selected_file(path)
+
+    def _set_selected_file(self, path: str) -> None:
+        """Set active file, update drop zone and action buttons."""
+        self._selected_file_path = path
+        self.drop_zone.showFile(path)
+        self.convert_btn.setEnabled(True)
+        self.clear_btn.setEnabled(True)
+        self.status_label.setText(f"Ready: {os.path.basename(path)}")
+        self.progress.setVisible(False)
+
+    def _on_clear(self) -> None:
+        """Clear currently loaded file and reset state."""
+        self._selected_file_path = None
+        self.drop_zone.reset()
+        self.convert_btn.setEnabled(False)
+        self.clear_btn.setEnabled(False)
+        self.status_label.setText("")
+        self.progress.setVisible(False)
+
+    def _on_convert(self) -> None:
+        """Convert the currently selected file."""
+        if not self._selected_file_path or not os.path.isfile(self._selected_file_path):
+            QMessageBox.warning(self, "No File", "Please select a file to convert first.")
+            return
+        self._handle_source_file(self._selected_file_path)
 
     def _handle_source_file(self, src: str) -> None:
-        """Common handler for both button-select and drag-and-drop."""
+        """Prompt destination and run conversion for *src*."""
+        self._selected_file_path = src
+        self.drop_zone.showFile(src)
+        self.convert_btn.setEnabled(True)
+        self.clear_btn.setEnabled(True)
+
         ext = os.path.splitext(src)[1].lower()
         output_ext = ext
 
@@ -297,8 +515,15 @@ class FileConvertTab(QWidget):
             return
 
         self.select_btn.setEnabled(False)
+        self.convert_btn.setEnabled(False)
+        self.clear_btn.setEnabled(False)
         self.cancel_btn.setEnabled(True)
         self.drop_zone.setAcceptDrops(False)
+        self.drop_zone.setEnabled(False)
+        self.source_font_edit.setEnabled(False)
+        self.output_family_edit.setEnabled(False)
+        self.choose_font_btn.setEnabled(False)
+        self.size_mapping_edit.setEnabled(False)
         self.progress.setValue(0)
         self.progress.setVisible(True)
         self.status_label.setText("Converting…")
@@ -312,16 +537,24 @@ class FileConvertTab(QWidget):
             size_mapping=size_mapping,
         )
         self._worker.progress.connect(self.progress.setValue)
+        self._worker.status.connect(self.status_label.setText)
         self._worker.finished.connect(self._on_finished)
         self._worker.error.connect(self._on_error)
         self._worker.cancelled.connect(self._on_cancelled)
         self._worker.start()
 
     def _restore_controls(self) -> None:
-        """Re-enable buttons and drop zone after conversion ends."""
+        """Re-enable buttons, drop zone, and settings after conversion ends."""
         self.select_btn.setEnabled(True)
+        self.convert_btn.setEnabled(self._selected_file_path is not None)
+        self.clear_btn.setEnabled(self._selected_file_path is not None)
         self.cancel_btn.setEnabled(False)
+        self.drop_zone.setEnabled(True)
         self.drop_zone.setAcceptDrops(True)
+        self.source_font_edit.setEnabled(True)
+        self.output_family_edit.setEnabled(True)
+        self.choose_font_btn.setEnabled(True)
+        self.size_mapping_edit.setEnabled(True)
 
     def _on_cancel(self) -> None:
         if self._worker and self._worker.isRunning():

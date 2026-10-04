@@ -109,3 +109,48 @@ class TestPdfConverter(unittest.TestCase):
             with self.assertRaises(ConversionCancelled):
                 convert_pdf_to_txt_file(src, dst, cancelled=lambda: True)
             self.assertFalse(os.path.exists(dst))
+
+    def test_pdf_conversion_status_callback_invoked(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            src = os.path.join(tmp, "source.pdf")
+            dst = os.path.join(tmp, "converted.pdf")
+            doc = fitz.open()
+            doc.new_page().insert_text((50, 80), "at_m", fontsize=16)
+            doc.save(src)
+            doc.close()
+
+            statuses: list[str] = []
+            convert_pdf_file(src, dst, status_callback=statuses.append)
+
+            self.assertTrue(any("page 1" in s.lower() for s in statuses))
+            self.assertTrue(any("saving" in s.lower() for s in statuses))
+
+    def test_pdf_converter_merges_adjacent_line_spans(self) -> None:
+        from migration.pdf_converter import _merge_line_spans
+
+        spans = [
+            {
+                "font": "kothupaoh1",
+                "size": 16.0,
+                "color": 0,
+                "bbox": (50.0, 100.0, 80.0, 120.0),
+                "origin": (50.0, 115.0),
+                "text": "at_",
+            },
+            {
+                "font": "kothupaoh1",
+                "size": 16.0,
+                "color": 0,
+                "bbox": (80.0, 100.0, 100.0, 120.0),
+                "origin": (80.0, 115.0),
+                "text": "m",
+            },
+        ]
+        replacements, redact_rects, count = _merge_line_spans(
+            spans, source_font="kothupaoh1", sizes={16.0: 16.0}, rotation=0
+        )
+        self.assertEqual(count, 2)
+        self.assertEqual(len(redact_rects), 2)
+        self.assertEqual(len(replacements), 1)
+        # "at_m" converted together
+        self.assertIn("အ", replacements[0]["text"])
