@@ -16,6 +16,12 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
+Write-Host "==> Creating Windows Portable ZIP archive..."
+$version = python -c "import sys; sys.path.insert(0, '.'); from core.version import __version__; print(__version__)"
+if (-not $version) { $version = "1.0.1" }
+New-Item -ItemType Directory -Force -Path "Output" | Out-Null
+Compress-Archive -Path "dist\PaOConverter" -DestinationPath "Output\PaOConverter_v${version}_Windows_Portable.zip" -Force
+
 Write-Host "==> Locating Inno Setup Compiler (ISCC.exe)..."
 $isccCandidates = @(
     "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",

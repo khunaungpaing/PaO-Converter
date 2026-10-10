@@ -16,7 +16,7 @@ from core.file_options import (
 
 
 UNICODE_FONT = (
-    Path(__file__).resolve().parents[1] / "assets" / "fonts" / "KhamThaton-Exp-Regular-0.2.ttf"
+    Path(__file__).resolve().parents[1] / "assets" / "fonts" / "KhamThaton-Exp-Regular-0.3.ttf"
 )
 
 

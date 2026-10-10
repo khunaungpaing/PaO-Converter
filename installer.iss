@@ -2,7 +2,7 @@
 ; Creates a standard Windows installer (.exe) with automatic in-place upgrade/replacement support.
 
 #define MyAppName "Pa-O Converter"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "Pa-O Language Community"
 #define MyAppURL "https://github.com/khunaungpaing/PaO-Converter"
 #define MyAppExeName "PaOConverter.exe"

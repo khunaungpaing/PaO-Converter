@@ -6,7 +6,7 @@ from PyQt6.QtGui import QFontDatabase
 
 _ASSETS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "fonts")
 _ASCII_FONT_FILE = os.path.join(_ASSETS, "kothupaoh1.ttf")
-_UNI_FONT_FILE = os.path.join(_ASSETS, "KhamThaton-Exp-Regular-0.2.ttf")
+_UNI_FONT_FILE = os.path.join(_ASSETS, "KhamThaton-Exp-Regular-0.3.ttf")
 
 
 def load_application_fonts() -> tuple[str, str]:

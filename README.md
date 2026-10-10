@@ -104,7 +104,7 @@ python main.py
 assets/
 ├── fonts/
 │   ├── kothupaoh1.ttf                  # Bundled Pa-O legacy ASCII font
-│   └── KhamThaton-Exp-Regular-0.2.ttf  # Bundled Pa-O Unicode font
+│   └── KhamThaton-Exp-Regular-0.3.ttf  # Bundled Pa-O Unicode font
 └── img/
     ├── app.icns                        # macOS application & dock icon
     ├── app.ico                         # Windows executable & installer icon
@@ -119,7 +119,7 @@ assets/
 | --- | --- |
 | [`core/engine.py`](core/engine.py) | ASCII-to-Unicode conversion pipeline and phonetic ordering rules |
 | [`core/mapping.py`](core/mapping.py) | Character lookup tables and derived character sets |
-| [`core/version.py`](core/version.py) | Application version (`v1.0.0`), author metadata, and license constants |
+| [`core/version.py`](core/version.py) | Application version (`v1.0.1`), author metadata, and license constants |
 | [`core/updater.py`](core/updater.py) | Semantic version comparison, platform asset matching, and GitHub API release checking |
 | [`core/file_options.py`](core/file_options.py) | Font-name normalization and size-mapping helpers |
 | [`core/cancellation.py`](core/cancellation.py) | Thread-safe cooperative cancellation handling |
@@ -143,19 +143,21 @@ Pre-configured scripts are available to build standalone distribution packages:
 ```bash
 ./scripts/build_macos.sh
 ```
-Produces `dist/PaOConverter_v1.0.0_macOS.dmg` with a drag-to-Applications shortcut. Upgrades automatically prompt to replace previous versions.
+Produces `dist/PaOConverter_v1.0.1_macOS.dmg` with a drag-to-Applications shortcut. Upgrades automatically prompt to replace previous versions.
 
-### Windows (Inno Setup .exe)
+### Windows (Inno Setup .exe & Portable .zip)
 ```bat
 scripts\build_windows.bat
 ```
-Produces `Output\PaOConverter_v1.0.0_Windows_Setup.exe` with a fixed `AppId` for clean in-place upgrades.
+Produces:
+- `Output\PaOConverter_v1.0.1_Windows_Setup.exe` — standard installer with a fixed `AppId` for clean in-place upgrades.
+- `Output\PaOConverter_v1.0.1_Windows_Portable.zip` — standalone portable folder (extract and run directly without installation or Smart App Control installer blocks).
 
 ### Automated GitHub Releases (CI/CD)
-Pushing a version tag automatically triggers [`.github/workflows/build-release.yml`](.github/workflows/build-release.yml) to build both macOS and Windows installers:
+Pushing a version tag automatically triggers [`.github/workflows/build-release.yml`](.github/workflows/build-release.yml) to build macOS DMG, Windows Setup, and Windows Portable packages:
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.0.1
+git push origin v1.0.1
 ```
 
 ---

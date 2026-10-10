@@ -1,6 +1,6 @@
 """Application version, license and metadata."""
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 APP_NAME = "Pa-O Converter"
 APP_ID = "com.pao.converter"
 AUTHOR = "Khun Aung Paing & Pa-O Language Community"
